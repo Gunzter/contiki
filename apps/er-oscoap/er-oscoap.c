@@ -72,7 +72,7 @@ void oscoap_ctx_store_init(){
 }
 
 //TODO add support for key generation using a base key and HKDF, this will come at a later stage
-OSCOAP_COMMON_CONTEXT* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv, uint8_t* rw_k, uint8_t* rw_iv){
+OSCOAP_COMMON_CONTEXT* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv, uint8_t* rw_k, uint8_t* rw_iv, uint8_t replay_window){
     OSCOAP_COMMON_CONTEXT* common_ctx = memb_alloc(&common_contexts);
     if(common_ctx == NULL) return 0;
    
@@ -94,7 +94,7 @@ OSCOAP_COMMON_CONTEXT* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_
     memcpy(recipient_ctx->RECIPIENT_KEY, rw_k, CONTEXT_KEY_LEN);
     memcpy(recipient_ctx->RECIPIENT_IV, rw_iv, CONTEXT_INIT_VECT_LEN);
     recipient_ctx->RECIPIENT_SEQ = 0;
-    recipient_ctx->REPLAY_WINDOW = 0; //64 is the default but we do 0 to ease development
+    recipient_ctx->REPLAY_WINDOW = replay_window;
    
     //TODO This is to easly identify the sender and recipient ID
     memset(recipient_ctx->RECIPIENT_ID, 0xAA, ID_LEN);
@@ -883,7 +883,7 @@ void oscoap_restore_packet(void* packet){
     current_option += option_length;  
   }
 }
-
+/* Below is debug functions */
 void oscoap_printf_hex(unsigned char *data, unsigned int len){
 	int i=0;
 	for(i=0; i<len; i++)

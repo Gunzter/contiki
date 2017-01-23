@@ -116,12 +116,12 @@ PROCESS_THREAD(er_example_client, ev, data)
   oscoap_ctx_store_init();
 
   uint8_t cid[CONTEXT_ID_LEN] = { 0, 0, 0, 0, 0, 0, 0, 0x02};
-  char sender_key[] =   {0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41};
-  char receiver_key[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02};
-  char sender_iv[] = {0x47, 0x47, 0x47, 0x47, 0x47, 0x47, 0x47 };
-  char receiver_iv[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02 };
+  char sender_key[] =   {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+  char receiver_key[] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F};
+  char sender_iv[] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
+  char receiver_iv[] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16 };
    
-  if(oscoap_new_ctx( cid, sender_key, sender_iv, receiver_key, receiver_iv) == 0){
+  if(oscoap_new_ctx( cid, sender_key, sender_iv, receiver_key, receiver_iv, 0) == 0){
     printf("Error creating context!\n");
   }
 
@@ -172,15 +172,21 @@ PROCESS_THREAD(er_example_client, ev, data)
    
       coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
  
-     //TODO, this should be implemented using the uri -> cid map, not like this.
-    uint8_t cid3[CONTEXT_ID_LEN] = { 0, 0, 0, 0, 0, 0, 0, 0x02};
-     request->context = oscoap_find_ctx_by_cid(cid3);
+      //TODO, this should be implemented using the uri -> cid map, not like this.
+      uint8_t cid3[CONTEXT_ID_LEN] = { 0, 0, 0, 0, 0, 0, 0, 0x02};
+      request->context = oscoap_find_ctx_by_cid(cid3);
      
-     coap_set_header_uri_path(request, service_urls[4]);
+      coap_set_header_uri_path(request, service_urls[4]);
 
       char* u_buffer;
       int uri_len = coap_get_header_uri_path(request, &u_buffer);
+      char uri_host = "oscoap.test";
+      int uri_host_len = coap_set_header_uri_host(request, &uri_host);
+      printf("uri_host l %d\n", uri_host_len);
+      char* uh;
+      uri_host_len = coap_get_header_uri_host(request, &uh);
       printf("ubuf: %s\n",u_buffer);
+      printf("uri-host %.*s\n",uri_host_len, uh);
 
       coap_set_header_object_security(request);
       //request->ipaddr = &server_ipaddr;
