@@ -234,7 +234,7 @@ int oscoap_free_ctx(OSCOAP_COMMON_CONTEXT *ctx){
         ctx_ptr->NEXT_CONTEXT = NULL;
       }
     }
-    memset(ctx->BASE_KEY, 0x00, BASE_KEY_LEN);
+    memset(ctx->BASE_KEY, 0x00, ctx->BASE_KEY_LEN);
     memset(ctx->SENDER_CONTEXT->SENDER_KEY, 0x00, CONTEXT_KEY_LEN);
     memset(ctx->SENDER_CONTEXT->SENDER_IV, 0x00, CONTEXT_INIT_VECT_LEN);
     memset(ctx->RECIPIENT_CONTEXT->RECIPIENT_KEY, 0x00, CONTEXT_KEY_LEN);
@@ -1012,4 +1012,33 @@ void oscoap_printf_bin(unsigned char *data, unsigned int len){
 		PRINTF(" "BYTETOBINARYPATTERN" ",BYTETOBINARY(data[i]));
 	}
 	PRINTF("\n");
+}
+
+void oscoap_print_context(OSCOAP_COMMON_CONTEXT* ctx){
+    PRINTF("Context ID: ");
+    oscoap_printf_hex(ctx->CONTEXT_ID, CONTEXT_ID_LEN);
+    PRINTF("Base Key: ");
+    oscoap_printf_hex(ctx->BASE_KEY, ctx->BASE_KEY_LEN);
+    PRINTF("ALG: %d\n", ctx->ALG);
+
+    OSCOAP_SENDER_CONTEXT* s = ctx->SENDER_CONTEXT;
+    PRINTF("Sender Context: {\n");
+    PRINTF("\tSender ID: ");
+    oscoap_printf_hex(s->SENDER_ID, CONTEXT_ID_LEN);
+    PRINTF("\tSender Key: ");
+    oscoap_printf_hex(s->SENDER_KEY, CONTEXT_KEY_LEN);
+    PRINTF("\tSender IV: ");
+    oscoap_printf_hex(s->SENDER_IV, CONTEXT_INIT_VECT_LEN);
+    PRINTF("}\n");
+
+    OSCOAP_RECIPIENT_CONTEXT* r = ctx->RECIPIENT_CONTEXT;
+    PRINTF("Recipient Context: {\n");
+    PRINTF("\tRecipient ID: ");
+    oscoap_printf_hex(r->RECIPIENT_ID, CONTEXT_ID_LEN);
+    PRINTF("\tRecipient Key: ");
+    oscoap_printf_hex(r->RECIPIENT_KEY, CONTEXT_KEY_LEN);
+    PRINTF("\tRecipient IV: ");
+    oscoap_printf_hex(r->RECIPIENT_IV, CONTEXT_INIT_VECT_LEN);
+    PRINTF("}\n");
+
 }
