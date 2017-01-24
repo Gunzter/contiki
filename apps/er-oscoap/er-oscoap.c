@@ -40,6 +40,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "opt-cbor.h"
 #include "lib/memb.h"
 #include <inttypes.h>
+#include "sha.h"
 
 #define DEBUG 1
 #if DEBUG
@@ -71,7 +72,98 @@ void oscoap_ctx_store_init(){
 
 }
 
+size_t get_info_len(size_t cid_len, size_t id_len, uint8_t out_len){
+  size_t len = cid_len + id_len;
+  if(out_len == 16){
+    len += 3;
+  } else {
+    len += 2;
+  }
+  len += 6;
+  return len;
+}
+
+
+void compose_info(uint8_t* buffer, uint8_t* cid, size_t cid_len, uint8_t alg, uint8_t* id, size_t id_len, uint8_t out_len){
+    uint8_t ret = 0;
+    ret = OPT_CBOR_put_array(&buffer, 5);
+    ret = OPT_CBOR_put_bytes(&buffer, cid_len, cid);
+    ret = OPT_CBOR_put_bytes(&buffer, id_len, id);
+    ret = OPT_CBOR_put_unsigned(&buffer, alg);
+    char* text;
+    if( out_len == 16 ){
+        text = "Key";
+    } else {
+        text = "IV";
+    }
+    ret = OPT_CBOR_put_text(&buffer, text, strlen(text));
+    ret = OPT_CBOR_put_unsigned(&buffer, out_len);
+
+    return ret;
+}
+
+OSCOAP_COMMON_CONTEXT* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t* master_secret,
+           size_t master_secret_len, uint8_t alg, uint8_t hkdf_alg,
+            uint8_t* sid, size_t sid_len, uint8_t* rid, size_t rid_len, uint8_t replay_window){
+    printf("derrive context\n");
+
+    OSCOAP_COMMON_CONTEXT* common_ctx = memb_alloc(&common_contexts);
+    if(common_ctx == NULL) return 0;
+   
+    OSCOAP_RECIPIENT_CONTEXT* recipient_ctx = memb_alloc(&recipient_contexts);
+    if(recipient_ctx == NULL) return 0;
+   
+    OSCOAP_SENDER_CONTEXT* sender_ctx = memb_alloc(&sender_contexts);
+    if(sender_ctx == NULL) return 0;
+
+    uint8_t zeroes[32];
+    memset(zeroes, 0x00, 32);
+
+    size_t info_buffer_size;
+    info_buffer_size = get_info_len(cid_len, sid_len, CONTEXT_KEY_LEN);
+    uint8_t info_buffer[info_buffer_size + 10]; // TODO, calculate max buffer and run with that
+    //Sender Key
+    info_buffer_size = get_info_len(cid_len, sid_len, CONTEXT_KEY_LEN);
+    compose_info(&info_buffer, cid, cid_len, alg, sid, sid_len, CONTEXT_KEY_LEN);
+    hkdf(SHA256, zeroes, 32, master_secret, master_secret_len, info_buffer, info_buffer_size, sender_ctx->SENDER_KEY, CONTEXT_KEY_LEN );
+
+    //Sender IV
+    info_buffer_size = get_info_len(cid_len, sid_len, CONTEXT_INIT_VECT_LEN);
+    compose_info(&info_buffer, cid, cid_len, alg, sid, sid_len, CONTEXT_INIT_VECT_LEN);
+    hkdf(SHA256, zeroes, 32, master_secret, master_secret_len, info_buffer, info_buffer_size, sender_ctx->SENDER_IV, CONTEXT_INIT_VECT_LEN );
+
+
+    //Receiver Key
+    info_buffer_size = get_info_len(cid_len, rid_len, CONTEXT_KEY_LEN);
+    compose_info(&info_buffer, cid, cid_len, alg, rid, rid_len, CONTEXT_KEY_LEN);
+    hkdf(SHA256, zeroes, 32, master_secret, master_secret_len, info_buffer, info_buffer_size, recipient_ctx->RECIPIENT_KEY, CONTEXT_KEY_LEN );
+
+    //Receiver IV
+    info_buffer_size = get_info_len(cid_len, rid_len, CONTEXT_INIT_VECT_LEN);
+    compose_info(&info_buffer, cid, cid_len, alg, rid, rid_len, CONTEXT_INIT_VECT_LEN);
+    hkdf(SHA256, zeroes, 32, master_secret, master_secret_len, info_buffer, info_buffer_size, recipient_ctx->RECIPIENT_IV, CONTEXT_INIT_VECT_LEN );
+
+    common_ctx->ALG = alg;
+    memcpy(common_ctx->CONTEXT_ID, cid, CONTEXT_ID_LEN);
+    common_ctx->RECIPIENT_CONTEXT = recipient_ctx;
+    common_ctx->SENDER_CONTEXT = sender_ctx;
+    sender_ctx->SENDER_SEQ = 0;
+
+    recipient_ctx->RECIPIENT_SEQ = 0;
+    recipient_ctx->REPLAY_WINDOW = replay_window;
+   
+   //TODO add checks to assert ( rid_len < ID_LEN && cid_len < ID_len)
+    memset(recipient_ctx->RECIPIENT_ID, rid, rid_len);
+    memset(sender_ctx->SENDER_ID, sid, sid_len);
+
+    common_ctx->NEXT_CONTEXT = common_context_store;
+    common_context_store = common_ctx;
+    return common_ctx;
+
+}
+
 //TODO add support for key generation using a base key and HKDF, this will come at a later stage
+//TODO add SID 
 OSCOAP_COMMON_CONTEXT* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv, uint8_t* rw_k, uint8_t* rw_iv, uint8_t replay_window){
     OSCOAP_COMMON_CONTEXT* common_ctx = memb_alloc(&common_contexts);
     if(common_ctx == NULL) return 0;
@@ -102,7 +194,7 @@ OSCOAP_COMMON_CONTEXT* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_
 
     common_ctx->NEXT_CONTEXT = common_context_store;
     common_context_store = common_ctx;
-   
+    
     return common_ctx;
 }
 

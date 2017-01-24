@@ -76,7 +76,7 @@ uint8_t OPT_CBOR_put_map(uint8_t **buffer, uint8_t elements){
 }
 
 uint8_t OPT_CBOR_put_unsigned(uint8_t **buffer, uint8_t value){
-	if(value > 15){
+	if(value > 0x17){
 		PRINTF("error in unsigned\n");
 		return 0;
 	}

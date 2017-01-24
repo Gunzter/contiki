@@ -46,7 +46,7 @@ void oscoap_printf_char(unsigned char *data, unsigned int len);
 void oscoap_printf_bin(unsigned char *data, unsigned int len);
 
 /* The number of Security Contexts available on this device */
-#define CONTEXT_NUM 1
+#define CONTEXT_NUM 2
 
 /* Functions for handling the security contexts */
 void oscoap_ctx_store_init();
