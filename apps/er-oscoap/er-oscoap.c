@@ -69,7 +69,6 @@ void oscoap_ctx_store_init(){
   memb_init(&common_contexts);
   memb_init(&sender_contexts);
   memb_init(&recipient_contexts);
-
 }
 
 size_t get_info_len(size_t cid_len, size_t id_len, uint8_t out_len){
@@ -1015,6 +1014,7 @@ void oscoap_printf_bin(unsigned char *data, unsigned int len){
 }
 
 void oscoap_print_context(OSCOAP_COMMON_CONTEXT* ctx){
+    PRINTF("Print Context:\n");
     PRINTF("Context ID: ");
     oscoap_printf_hex(ctx->CONTEXT_ID, CONTEXT_ID_LEN);
     PRINTF("Base Key: ");

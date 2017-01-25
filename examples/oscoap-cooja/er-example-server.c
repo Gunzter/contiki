@@ -172,12 +172,13 @@ char sender_iv[] =    {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16 };
 
 char sender_id[] = { 0xAA };
 char receiver_id[] = { 0xBB };
-
+OSCOAP_COMMON_CONTEXT* con =  oscoap_derrive_ctx(cid, 8, receiver_key, 16, 12 , 1,
+            sender_id, 1, receiver_iv, 1, 0);
+oscoap_print_context(con);
 if(oscoap_new_ctx( cid, sender_key, sender_iv, receiver_key, receiver_iv, 0) == 0){
   printf("Error: Could not create new Context!\n");
 }
-oscoap_derrive_ctx(cid, 8, receiver_key, 16, 12 , 1,
-            sender_id, 1, receiver_iv, 1, 0);
+
 //oscoap_ctx_init(cid, sender_key, sender_iv, receiver_key, receiver_iv);
 //cid_map_put(context);
 OSCOAP_COMMON_CONTEXT* c = NULL;
