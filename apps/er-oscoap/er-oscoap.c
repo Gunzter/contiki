@@ -100,11 +100,13 @@ void compose_info(uint8_t* buffer, uint8_t* cid, size_t cid_len, uint8_t alg, ui
 
     return ret;
 }
+uint8_t zeroes[32];
+uint8_t info_buffer[40 + 10]; // TODO, calculate max buffer and run with that
 
 OSCOAP_COMMON_CONTEXT* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t* master_secret,
            size_t master_secret_len, uint8_t alg, uint8_t hkdf_alg,
             uint8_t* sid, size_t sid_len, uint8_t* rid, size_t rid_len, uint8_t replay_window){
-    printf("derrive context\n");
+  //  printf("derrive context\n");
 
     OSCOAP_COMMON_CONTEXT* common_ctx = memb_alloc(&common_contexts);
     if(common_ctx == NULL) return 0;
@@ -115,12 +117,10 @@ OSCOAP_COMMON_CONTEXT* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t*
     OSCOAP_SENDER_CONTEXT* sender_ctx = memb_alloc(&sender_contexts);
     if(sender_ctx == NULL) return 0;
 
-    uint8_t zeroes[32];
     memset(zeroes, 0x00, 32);
-
+  
     size_t info_buffer_size;
     info_buffer_size = get_info_len(cid_len, sid_len, CONTEXT_KEY_LEN);
-    uint8_t info_buffer[info_buffer_size + 10]; // TODO, calculate max buffer and run with that
     //Sender Key
     info_buffer_size = get_info_len(cid_len, sid_len, CONTEXT_KEY_LEN);
     compose_info(&info_buffer, cid, cid_len, alg, sid, sid_len, CONTEXT_KEY_LEN);
@@ -130,7 +130,6 @@ OSCOAP_COMMON_CONTEXT* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t*
     info_buffer_size = get_info_len(cid_len, sid_len, CONTEXT_INIT_VECT_LEN);
     compose_info(&info_buffer, cid, cid_len, alg, sid, sid_len, CONTEXT_INIT_VECT_LEN);
     hkdf(SHA256, zeroes, 32, master_secret, master_secret_len, info_buffer, info_buffer_size, sender_ctx->SENDER_IV, CONTEXT_INIT_VECT_LEN );
-
 
     //Receiver Key
     info_buffer_size = get_info_len(cid_len, rid_len, CONTEXT_KEY_LEN);
@@ -142,6 +141,8 @@ OSCOAP_COMMON_CONTEXT* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t*
     compose_info(&info_buffer, cid, cid_len, alg, rid, rid_len, CONTEXT_INIT_VECT_LEN);
     hkdf(SHA256, zeroes, 32, master_secret, master_secret_len, info_buffer, info_buffer_size, recipient_ctx->RECIPIENT_IV, CONTEXT_INIT_VECT_LEN );
 
+    common_ctx->BASE_KEY = master_secret;
+    common_ctx->BASE_KEY_LEN = master_secret_len;
     common_ctx->ALG = alg;
     memcpy(common_ctx->CONTEXT_ID, cid, CONTEXT_ID_LEN);
     common_ctx->RECIPIENT_CONTEXT = recipient_ctx;
@@ -152,8 +153,10 @@ OSCOAP_COMMON_CONTEXT* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t*
     recipient_ctx->REPLAY_WINDOW = replay_window;
    
    //TODO add checks to assert ( rid_len < ID_LEN && cid_len < ID_len)
-    memset(recipient_ctx->RECIPIENT_ID, rid, rid_len);
-    memset(sender_ctx->SENDER_ID, sid, sid_len);
+    memcpy(recipient_ctx->RECIPIENT_ID, rid, rid_len);
+    memcpy(sender_ctx->SENDER_ID, sid, sid_len);
+    recipient_ctx->RECIPIENT_ID_LEN = rid_len;
+    sender_ctx->SENDER_ID_LEN = sid_len;
 
     common_ctx->NEXT_CONTEXT = common_context_store;
     common_context_store = common_ctx;
@@ -163,7 +166,9 @@ OSCOAP_COMMON_CONTEXT* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t*
 
 //TODO add support for key generation using a base key and HKDF, this will come at a later stage
 //TODO add SID 
-OSCOAP_COMMON_CONTEXT* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv, uint8_t* rw_k, uint8_t* rw_iv, uint8_t replay_window){
+OSCOAP_COMMON_CONTEXT* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv, uint8_t* rw_k, uint8_t* rw_iv,
+  uint8_t* s_id, uint8_t s_id_len, uint8_t* r_id, uint8_t r_id_len, uint8_t replay_window){
+   
     OSCOAP_COMMON_CONTEXT* common_ctx = memb_alloc(&common_contexts);
     if(common_ctx == NULL) return 0;
    
@@ -188,8 +193,10 @@ OSCOAP_COMMON_CONTEXT* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_
     recipient_ctx->REPLAY_WINDOW = replay_window;
    
     //TODO This is to easly identify the sender and recipient ID
-    memset(recipient_ctx->RECIPIENT_ID, 0xAA, ID_LEN);
-    memset(sender_ctx->SENDER_ID, 0xAA, ID_LEN);
+    memcpy(recipient_ctx->RECIPIENT_ID, r_id, r_id_len);
+    memcpy(sender_ctx->SENDER_ID, r_id, r_id_len);
+    recipient_ctx->RECIPIENT_ID_LEN = r_id_len;
+    sender_ctx->SENDER_ID_LEN = s_id_len;
 
     common_ctx->NEXT_CONTEXT = common_context_store;
     common_context_store = common_ctx;
@@ -1024,7 +1031,7 @@ void oscoap_print_context(OSCOAP_COMMON_CONTEXT* ctx){
     OSCOAP_SENDER_CONTEXT* s = ctx->SENDER_CONTEXT;
     PRINTF("Sender Context: {\n");
     PRINTF("\tSender ID: ");
-    oscoap_printf_hex(s->SENDER_ID, CONTEXT_ID_LEN);
+    oscoap_printf_hex(s->SENDER_ID, ID_LEN);
     PRINTF("\tSender Key: ");
     oscoap_printf_hex(s->SENDER_KEY, CONTEXT_KEY_LEN);
     PRINTF("\tSender IV: ");
@@ -1034,11 +1041,11 @@ void oscoap_print_context(OSCOAP_COMMON_CONTEXT* ctx){
     OSCOAP_RECIPIENT_CONTEXT* r = ctx->RECIPIENT_CONTEXT;
     PRINTF("Recipient Context: {\n");
     PRINTF("\tRecipient ID: ");
-    oscoap_printf_hex(r->RECIPIENT_ID, CONTEXT_ID_LEN);
+    oscoap_printf_hex(r->RECIPIENT_ID, ID_LEN);
     PRINTF("\tRecipient Key: ");
     oscoap_printf_hex(r->RECIPIENT_KEY, CONTEXT_KEY_LEN);
     PRINTF("\tRecipient IV: ");
     oscoap_printf_hex(r->RECIPIENT_IV, CONTEXT_INIT_VECT_LEN);
     PRINTF("}\n");
-
+  
 }
