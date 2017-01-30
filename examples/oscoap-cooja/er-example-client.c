@@ -106,7 +106,10 @@ PROCESS_THREAD(er_example_client, ev, data)
 
   /* receives all CoAP messages */
   coap_init_engine();
-
+  PRINTF("uIP buffer: %u\n", UIP_BUFSIZE);
+  PRINTF("LL header: %u\n", UIP_LLH_LEN);
+  PRINTF("IP+UDP header: %u\n", UIP_IPUDPH_LEN);
+  PRINTF("REST max chunk: %u\n", REST_MAX_CHUNK_SIZE);
 
 #if PLATFORM_HAS_BUTTON
   SENSORS_ACTIVATE(button_sensor);
@@ -128,9 +131,12 @@ if(oscoap_derrive_ctx(context_id, CONTEXT_ID_LEN, master_secret, 24, 12 , 1,
 */
   uint8_t cid[CONTEXT_ID_LEN] = { 0xCA, 0xFE, 0xF0, 0x0D, 0xBA, 0xAD, 0xC0, 0xDE};
   char receiver_key[] = {0xA8,0xFF,0x80,0xB6,0x5C,0xA4,0x15,0xFD,0x48,0x62,0x54,0x0E,0x59,0xC6,0xC0,0x68};
+  char receiver_iv[] =  {0x13,0xC6,0xA8,0x98,0xCB,0xCC,0xAD}; 
+  
+
   char sender_key[] = {0x91,0x16,0x33,0x57,0x36,0xA9,0x33,0xCA,0x26,0x8C,0xB6,0x2B,0xD6,0xE4,0xDD,0x36}; 
-  char receiver_iv[] = {0x11,0x2C,0xF8,0x2D,0xD0,0xC9,0x43};
-  char sender_iv[] =   {0x13,0xC6,0xA8,0x98,0xCB,0xCC,0xAD}; 
+  char sender_iv[] =  {0x11,0x2C,0xF8,0x2D,0xD0,0xC9,0x43};
+
   char sender_id[] = { 0x00 };
   char receiver_id[] = { 0x01 };
   if(oscoap_new_ctx( cid, sender_key, sender_iv, receiver_key, receiver_iv,sender_id, 1, receiver_id, 1, 64) == 0){
@@ -146,7 +152,7 @@ if(oscoap_derrive_ctx(context_id, CONTEXT_ID_LEN, master_secret, 24, 12 , 1,
     printf("could not fetch cid\n");
   }else{
     printf("Context sucessfully added to DB!\n");
-    oscoap_print_context(c);
+ //   oscoap_print_context(c);
   }
   
   printf("server ip poither %p\n", &server_ipaddr);
@@ -194,12 +200,12 @@ if(oscoap_derrive_ctx(context_id, CONTEXT_ID_LEN, master_secret, 24, 12 , 1,
       char* u_buffer;
       int uri_len = coap_get_header_uri_path(request, &u_buffer);
       char uri_host = "oscoap.test";
-      int uri_host_len = coap_set_header_uri_host(request, &uri_host);
-      printf("uri_host l %d\n", uri_host_len);
-      char* uh;
-      uri_host_len = coap_get_header_uri_host(request, &uh);
-      printf("ubuf: %s\n",u_buffer);
-      printf("uri-host %.*s\n",uri_host_len, uh);
+      //int uri_host_len = coap_set_header_uri_host(request, &uri_host);
+     // printf("uri_host l %d\n", uri_host_len);
+      //char* uh;
+      //uri_host_len = coap_get_header_uri_host(request, &uh);
+      //printf("ubuf: %s\n",u_buffer);
+      //printf("uri-host %.*s\n",uri_host_len, uh);
 
       coap_set_header_object_security(request);
       //request->ipaddr = &server_ipaddr;

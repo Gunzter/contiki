@@ -54,7 +54,7 @@
 /* IP buffer size must match all other hops, in particular the border router. */
 
    #undef UIP_CONF_BUFFER_SIZE
-   #define UIP_CONF_BUFFER_SIZE           128 // 256
+   #define UIP_CONF_BUFFER_SIZE          256
 
 
 /* Disabling RDC and CSMA for demo purposes. Core updates often
@@ -72,12 +72,12 @@
 
 /* Increase rpl-border-router IP-buffer when using more than 64. */
 #undef REST_MAX_CHUNK_SIZE
-#define REST_MAX_CHUNK_SIZE            30 //64
+#define REST_MAX_CHUNK_SIZE            64
 
 /* Estimate your header size, especially when using Proxy-Uri. */
 
    #undef COAP_MAX_HEADER_SIZE
-   #define COAP_MAX_HEADER_SIZE           35 //70
+   #define COAP_MAX_HEADER_SIZE           70
  
 
 /* Multiplies with chunk size, be aware of memory constraints. */

@@ -526,12 +526,15 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   
   coap_set_header_max_age(packet, 0);
   clear_options(coap_pkt);
-  size_t serialized_size =  coap_serialize_message_coap(packet, buffer);
-   
+  size_t serialized_size = coap_serialize_message_coap(packet, buffer);
+  if(serialized_size == 0){
+    PRINTF("%s\n", coap_error_message);
+  }
 
   PRINTF("Serialized size = %d\n", serialized_size);
   PRINTF_HEX(buffer, serialized_size);
   return serialized_size;
+  
 }
 
 
@@ -986,7 +989,7 @@ void oscoap_printf_hex(unsigned char *data, unsigned int len){
 	int i=0;
 	for(i=0; i<len; i++)
 	{
-		PRINTF(" %02x ",data[i]);
+		PRINTF("%02x ",data[i]);
 	}
 	PRINTF("\n");
 }
