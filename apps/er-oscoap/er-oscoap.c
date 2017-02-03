@@ -308,7 +308,8 @@ uint8_t oscoap_prepare_tid(uint8_t* buffer, OSCOAP_COMMON_CONTEXT* ctx, uint8_t 
     printf("SEQ ?! len = %d\n", seq_len);
     oscoap_printf_hex(seq_buffer, seq_len);
   }
-   memcpy(&buffer[offset], seq_buffer, seq_len);
+  
+  memcpy(&buffer[offset], seq_buffer, seq_len);
   printf("offset + seq_len %d\n", offset + seq_len);
   return offset+seq_len;
 }
@@ -327,14 +328,14 @@ size_t  oscoap_prepare_response_external_aad(coap_packet_t* coap_pkt, uint8_t* b
     ret += OPT_CBOR_put_bytes(&buffer, ctx->SENDER_CONTEXT->SENDER_ID_LEN, &(ctx->SENDER_CONTEXT->SENDER_ID)); //Sender ID
   
     size_t seq_len = to_bytes(ctx->SENDER_CONTEXT->SENDER_SEQ, seq_buffer);
-    printf("SEQ_BUFFER \n");
+    printf("SEQ_BUFFER len %d\n", seq_len);
     oscoap_printf_hex(seq_buffer, seq_len);
     ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
    } else {
     ret += OPT_CBOR_put_bytes(&buffer, ctx->RECIPIENT_CONTEXT->RECIPIENT_ID_LEN, &(ctx->RECIPIENT_CONTEXT->RECIPIENT_ID)); //Recipient ID
    
     size_t seq_len = to_bytes(ctx->RECIPIENT_CONTEXT->RECIPIENT_SEQ, seq_buffer);
-    printf("SEQ_BUFFER \n");
+    printf("SEQ_BUFFER len %d\n", seq_len);
     oscoap_printf_hex(seq_buffer, seq_len);
     ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
   }
@@ -525,7 +526,9 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   size_t aad_length = OPT_COSE_AAD_length(&cose);
   uint8_t aad_buffer[aad_length];
   uint8_t *tmp_buffer = aad_buffer;
-  OPT_COSE_Build_AAD(&cose, tmp_buffer);
+  aad_length = OPT_COSE_Build_AAD(&cose, tmp_buffer);
+  printf("serialized aad\n");
+  oscoap_printf_hex(aad_buffer, aad_length);
   OPT_COSE_SetAAD(&cose, aad_buffer, aad_length);
    
   size_t ciphertext_len = cose.plaintext_len + 8; 
