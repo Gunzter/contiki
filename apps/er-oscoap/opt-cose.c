@@ -171,7 +171,7 @@ uint8_t OPT_COSE_Encode_Protected(opt_cose_encrypt_t *cose, uint8_t **buffer){
 
 	OPT_CBOR_put_unsigned(buffer, COSE_Header_Partial_IV);
 	OPT_CBOR_put_bytes(buffer, cose->partial_iv_len, cose->partial_iv);
-	return 1;
+	return protected_len;
 }
 
 uint8_t OPT_COSE_Build_AAD(opt_cose_encrypt_t *cose, uint8_t *buffer){
@@ -196,6 +196,11 @@ size_t  OPT_COSE_AAD_length(opt_cose_encrypt_t *cose){
 		ret += cose->kid_len;
 		ret += 2; // one byte key one byte byte-tag
 	}
+	if(cose->sid_len > 0){
+		ret += cose->sid_len;
+		ret += 2; // one byte key one byte byte-tag
+	}
+	PRINTF("COSE AAD len %d\n", ret);
 	return ret;
 }
 
