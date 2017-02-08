@@ -194,7 +194,7 @@ OSCOAP_COMMON_CONTEXT* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_
    
     //TODO This is to easly identify the sender and recipient ID
     memcpy(recipient_ctx->RECIPIENT_ID, r_id, r_id_len);
-    memcpy(sender_ctx->SENDER_ID, r_id, r_id_len);
+    memcpy(sender_ctx->SENDER_ID, s_id, s_id_len);
     recipient_ctx->RECIPIENT_ID_LEN = r_id_len;
     sender_ctx->SENDER_ID_LEN = s_id_len;
 
@@ -325,15 +325,15 @@ size_t  oscoap_prepare_response_external_aad(coap_packet_t* coap_pkt, uint8_t* b
   ret += OPT_CBOR_put_bytes(&buffer, CONTEXT_ID_LEN, ctx->CONTEXT_ID);
   
   if(sender){
-    ret += OPT_CBOR_put_bytes(&buffer, ctx->SENDER_CONTEXT->SENDER_ID_LEN, &(ctx->SENDER_CONTEXT->SENDER_ID)); //Sender ID
-  
+    ret += OPT_CBOR_put_bytes(&buffer, ctx->RECIPIENT_CONTEXT->RECIPIENT_ID_LEN, &(ctx->RECIPIENT_CONTEXT->RECIPIENT_ID)); //Recipient ID
+
     size_t seq_len = to_bytes(ctx->SENDER_CONTEXT->SENDER_SEQ, seq_buffer);
     printf("SEQ_BUFFER len %d\n", seq_len);
     oscoap_printf_hex(seq_buffer, seq_len);
     ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
    } else {
-    ret += OPT_CBOR_put_bytes(&buffer, ctx->RECIPIENT_CONTEXT->RECIPIENT_ID_LEN, &(ctx->RECIPIENT_CONTEXT->RECIPIENT_ID)); //Recipient ID
-   
+    ret += OPT_CBOR_put_bytes(&buffer, ctx->SENDER_CONTEXT->SENDER_ID_LEN, &(ctx->SENDER_CONTEXT->SENDER_ID)); //Sender ID
+  
     size_t seq_len = to_bytes(ctx->RECIPIENT_CONTEXT->RECIPIENT_SEQ, seq_buffer);
     printf("SEQ_BUFFER len %d\n", seq_len);
     oscoap_printf_hex(seq_buffer, seq_len);
@@ -379,8 +379,8 @@ size_t oscoap_prepare_unencrypted_uri(coap_packet_t* coap_pkt, uint8_t* buffer, 
 
   strcat((char*)buffer,"/");
   ret += 1 ;
-  printf("IPV6 path\n");
-  oscoap_printf_hex(buffer, ret);
+//  printf("IPV6 path\n");
+//  oscoap_printf_hex(buffer, ret);
   return ret;
 
 }
@@ -389,17 +389,11 @@ size_t oscoap_prepare_request_external_aad(coap_packet_t* coap_pkt, uint8_t* buf
   uint8_t uri[60];
 	int uri_len = oscoap_prepare_unencrypted_uri(coap_pkt, uri, sender);
 
- // PRINTF("URI: len = %d\n");
- // PRINTF_HEX(uri, uri_len);
- // PRINTF("%.*s\n", uri_len, (char*)uri);
-
   uint8_t ret = 0;
   ret += OPT_CBOR_put_array(&buffer, 4); //TODO make check for mac-previous-block
   ret += OPT_CBOR_put_unsigned(&buffer, 1); //version is always 1
   ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->code)); //COAP code is one byte //TODO should be
   ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->context->ALG));
-  printf("URI outside buffer\n");
-  oscoap_printf_hex(uri, uri_len);
   ret += OPT_CBOR_put_text(&buffer, uri, uri_len); //unencrypted uri
 	
   return ret;
@@ -624,6 +618,8 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
       //  printf("external aad \n");
       //  oscoap_printf_hex(external_aad_buffer, external_aad_size); 
     }
+    printf("external aad\n");
+    oscoap_printf_hex(external_aad_buffer, external_aad_size);
 
     OPT_COSE_SetExternalAAD(&cose, external_aad_buffer, external_aad_size);
            
