@@ -627,8 +627,8 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     //server MUST stop processing the request.
   	size_t aad_len = OPT_COSE_AAD_length(&cose);
     uint8_t aad_buffer[aad_len];
+    aad_len = OPT_COSE_Build_AAD(&cose, aad_buffer);
     OPT_COSE_SetAAD(&cose, aad_buffer, aad_len);
-    OPT_COSE_Build_AAD(&cose, aad_buffer);
 
     size_t plaintext_len = cose.ciphertext_len - 8;
     uint8_t plaintext_buffer[plaintext_len];

@@ -39,7 +39,7 @@ ifeq ($(TARGET), minimal-net)
 CFLAGS += -DHARD_CODED_ADDRESS=\"fdfd::10\"
 ${info INFO: er-example compiling with large buffers}
 CFLAGS += -DUIP_CONF_BUFFER_SIZE=1300
-CFLAGS += -DREST_MAX_CHUNK_SIZE=1024
+CFLAGS += -DREST_MAX_CHUNK_SIZE=512
 CFLAGS += -DCOAP_MAX_HEADER_SIZE=176
 CONTIKI_WITH_RPL=0
 endif
@@ -60,8 +60,8 @@ connect-router:	$(CONTIKI)/tools/tunslip6
 	sudo $(CONTIKI)/tools/tunslip6 fd00::1/64
 
 connect-router-cooja:	$(CONTIKI)/tools/tunslip6
-	sudo $(CONTIKI)/tools/tunslip6 -a 127.0.0.1 -p 60001 fd00::1/64
-
+	sudo $(CONTIKI)/tools/tunslip6 -a 127.0.0.1 -p 60001 aaaa::1/64
+#								fd00::1/64
 connect-router-native:	$(CONTIKI)/examples/ipv6/native-border-router/border-router.native
 	sudo $(CONTIKI)/exmples/ipv6/native-border-router/border-router.native -a 127.0.0.1 -p 60001 fd00::1/64
 

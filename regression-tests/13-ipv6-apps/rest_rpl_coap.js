@@ -1,8 +1,10 @@
-TIMEOUT(300000);
+TIMEOUT(3000000000);
 
 /* conf */
-ADDRESS_ROUTER = "aaaa::212:7401:1:101";
-ADDRESS_SERVER = "aaaa::212:7402:2:202";
+//ADDRESS_ROUTER = "aaaa::212:7401:1:101";
+//ADDRESS_SERVER = "aaaa::212:7402:2:202";
+ADDRESS_ROUTER = "aaaa:0000:0000:0000:c30c:0000:0000:0001"
+ADDRESS_SERVER = "aaaa:0000:0000:0000:c30c:0000:0000:0002"
 NR_PINGS = 10;
 CMD_PING_PREFIX = "ping6 -c " + NR_PINGS + " -I tun0 ";
 CMD_TUNNEL = "make connect-router-cooja";
@@ -20,8 +22,10 @@ sim.setSpeedLimit(1.0);
 
 /* create tunnel interface */
 log.log("create tunnel interface\n");
-launcher = new java.lang.ProcessBuilder["(java.lang.String[])"](['sh','-c',CMD_TUNNEL]);
-launcher.directory(new java.io.File("../../examples/er-rest-example"));
+//launcher = new java.lang.ProcessBuilder["(java.lang.String[])"](['/bin/bash','-c',CMD_TUNNEL]);
+launcher = new java.lang.ProcessBuilder("/bin/bash","-c",CMD_TUNNEL);
+//launcher.directory(new java.io.File("../../examples/er-rest-example"));
+launcher.directory(new java.io.File("/home/martin/workspace/contiki-oscoap/examples/er-rest-example"));
 launcher.redirectErrorStream(true);
 tunProcess = launcher.start();
 tunRunnable = new Object();
@@ -47,9 +51,9 @@ WAIT_UNTIL(msg.equals("continue"));
 processOutput = "";
 executeAndWait = function(cmd) {
   log.log("EXEC>> " + cmd + "\n");
-
-  launcher = new java.lang.ProcessBuilder["(java.lang.String[])"](['sh','-c',cmd]);
-  launcher.redirectErrorStream(true);
+  //launcher = new java.lang.ProcessBuilder["(java.lang.String[])"](['/bin/bash','-c',cmd]);
+  launcher = new java.lang.ProcessBuilder('/bin/bash','-c',cmd);
+//  launcher.redirectErrorStream(true);
   process = launcher.start();
   runnable = new Object();
   runnable.run = function() {
@@ -142,6 +146,9 @@ if (processOutput.indexOf("Hello World!") != -1) {
   testFailed = true;
 }
 
+msg = "";
+GENERATE_MSG(100000000000000, "continue");
+WAIT_UNTIL(msg.equals("continue"));
 
 log.log("\n\nTest finished. Summary:\n");
 log.log(testSummary + "\n");
@@ -152,4 +159,6 @@ if (testFailed) {
 } else {
   log.testOK();
 }
-
+msg = "";
+GENERATE_MSG(100000000000000, "continue");
+WAIT_UNTIL(msg.equals("continue"));
