@@ -129,6 +129,9 @@ if(oscoap_derrive_ctx(context_id, CONTEXT_ID_LEN, master_secret, 24, 12 , 1,
   printf("Error: Could not create new Context!\n");
 }
 */
+
+/*
+//martin's demo
   uint8_t cid[CONTEXT_ID_LEN] = { 0xCA, 0xFE, 0xF0, 0x0D, 0xBA, 0xAD, 0xC0, 0xDE};
   char receiver_key[] = {0xA8,0xFF,0x80,0xB6,0x5C,0xA4,0x15,0xFD,0x48,0x62,0x54,0x0E,0x59,0xC6,0xC0,0x68};
   char receiver_iv[] =  {0x13,0xC6,0xA8,0x98,0xCB,0xCC,0xAD}; 
@@ -154,7 +157,32 @@ if(oscoap_derrive_ctx(context_id, CONTEXT_ID_LEN, master_secret, 24, 12 , 1,
     printf("Context sucessfully added to DB!\n");
  //   oscoap_print_context(c);
   }
+ */
   
+  //Interop
+	uint8_t cid[CONTEXT_ID_LEN] = { 0x4B, 0x65, 0x79, 0x23, 0x30};
+	char sender_key[] = {0xEB,0x43,0x09,0x8A,0x0F,0x6F,0x7B,0x69,0xCE,0xDF,0x29,0xE0,0x80,0x50,0x95,0x82};
+	char sender_iv[] = {0x58,0xF9,0x1A,0x5C,0xDF,0xF4,0xF5};
+
+	char receiver_key[] =  {0xF8,0x20,0x1E,0xD1,0x5E,0x10,0x37,0xBC,0xAF,0x69,0x06,0x07,0x9A,0xD3,0x0B,0x4F};
+	char receiver_iv[] =  {0xE8,0x28,0xA4,0x79,0xD0,0x88,0xC4};
+
+	char receiver_id[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
+	char sender_id[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
+	if(oscoap_new_ctx( cid, sender_key, sender_iv, receiver_key, receiver_iv, sender_id, ID_LEN, receiver_id, ID_LEN, 64) == 0){
+  	printf("Error: Could not create new Context!\n");
+	}
+	
+	OSCOAP_COMMON_CONTEXT* c = NULL;
+  uint8_t cid2[CONTEXT_ID_LEN] =  { 0x4B, 0x65, 0x79, 0x23, 0x30};
+  c = oscoap_find_ctx_by_cid(cid2);
+  PRINTF("COAP max size %d\n", COAP_MAX_PACKET_SIZE);
+  if(c == NULL){
+    printf("could not fetch cid\n");
+  }else{
+    printf("Context sucessfully added to DB!\n");
+  }
+
   printf("server ip poither %p\n", &server_ipaddr);
 
   etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
@@ -192,7 +220,7 @@ if(oscoap_derrive_ctx(context_id, CONTEXT_ID_LEN, master_secret, 24, 12 , 1,
       coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
  
       //TODO, this should be implemented using the uri -> cid map, not like this.
-      uint8_t cid3[CONTEXT_ID_LEN] = {0xCA, 0xFE, 0xF0, 0x0D, 0xBA, 0xAD, 0xC0, 0xDE };
+      uint8_t cid3[CONTEXT_ID_LEN] = { 0x4B, 0x65, 0x79, 0x23, 0x30};
       request->context = oscoap_find_ctx_by_cid(cid3);
      
       coap_set_header_uri_path(request, service_urls[4]);
