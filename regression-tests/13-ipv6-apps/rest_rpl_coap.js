@@ -25,7 +25,7 @@ log.log("create tunnel interface\n");
 //launcher = new java.lang.ProcessBuilder["(java.lang.String[])"](['/bin/bash','-c',CMD_TUNNEL]);
 launcher = new java.lang.ProcessBuilder("/bin/bash","-c",CMD_TUNNEL);
 //launcher.directory(new java.io.File("../../examples/er-rest-example"));
-launcher.directory(new java.io.File("/home/martin/workspace/contiki-oscoap/examples/er-rest-example"));
+launcher.directory(new java.io.File("../../examples/er-rest-example"));
 launcher.redirectErrorStream(true);
 tunProcess = launcher.start();
 tunRunnable = new Object();
