@@ -75,14 +75,14 @@
 #define REST_MAX_CHUNK_SIZE           64
 
 /* Estimate your header size, especially when using Proxy-Uri. */
-/*
+//For some reason withouth these defines cooja simulation won't work :/
    #undef COAP_MAX_HEADER_SIZE
    #define COAP_MAX_HEADER_SIZE           70
- */
+ 
 
 /* Multiplies with chunk size, be aware of memory constraints. */
 #undef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS     4
+#define COAP_MAX_OPEN_TRANSACTIONS     1
 
 /* Must be <= open transactions, default is COAP_MAX_OPEN_TRANSACTIONS-1. */
 /*
@@ -98,7 +98,7 @@
 
 /* Turn of DAO ACK to make code smaller */
 #undef RPL_CONF_WITH_DAO_ACK
-#define RPL_CONF_WITH_DAO_ACK          0
+#define RPL_CONF_WITH_DAO_ACK          0 // was 0
 
 #undef RPL_CONF_OF
 #define RPL_CONF_OF                    rpl_of0

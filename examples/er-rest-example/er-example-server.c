@@ -47,7 +47,7 @@
 #include "dev/button-sensor.h"
 #endif
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -168,6 +168,7 @@ PROCESS_THREAD(er_example_server, ev, data)
 
   /* Define application-specific events here. */
   while(1) {
+	printf("while \n");
     PROCESS_WAIT_EVENT();
 #if PLATFORM_HAS_BUTTON
     if(ev == sensors_event && data == &button_sensor) {

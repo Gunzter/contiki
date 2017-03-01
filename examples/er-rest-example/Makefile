@@ -61,7 +61,7 @@ connect-router:	$(CONTIKI)/tools/tunslip6
 
 connect-router-cooja:	$(CONTIKI)/tools/tunslip6
 	sudo $(CONTIKI)/tools/tunslip6 -a 127.0.0.1 -p 60001 aaaa::1/64
-#								fd00::1/64
+#						       60003 aaaa::	fd00::1/64
 connect-router-native:	$(CONTIKI)/examples/ipv6/native-border-router/border-router.native
 	sudo $(CONTIKI)/exmples/ipv6/native-border-router/border-router.native -a 127.0.0.1 -p 60001 fd00::1/64
 
