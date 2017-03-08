@@ -55,7 +55,7 @@
 
 /* Maximum number of failed request attempts before action */
 #ifndef COAP_MAX_ATTEMPTS
-#define COAP_MAX_ATTEMPTS              4
+#define COAP_MAX_ATTEMPTS              1
 #endif /* COAP_MAX_ATTEMPTS */
 
 /* Conservative size limit, as not all options have to be set at the same time. Check when Proxy-Uri option is used */
