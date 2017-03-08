@@ -83,7 +83,7 @@ size_t get_info_len(size_t cid_len, size_t id_len, uint8_t out_len){
 }
 
 
-void compose_info(uint8_t* buffer, uint8_t* cid, size_t cid_len, uint8_t alg, uint8_t* id, size_t id_len, uint8_t out_len){
+uint8_t compose_info(uint8_t* buffer, uint8_t* cid, size_t cid_len, uint8_t alg, uint8_t* id, size_t id_len, uint8_t out_len){
     uint8_t ret = 0;
     ret = OPT_CBOR_put_array(&buffer, 5);
     ret = OPT_CBOR_put_bytes(&buffer, cid_len, cid);
@@ -123,22 +123,22 @@ OSCOAP_COMMON_CONTEXT* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t*
     info_buffer_size = get_info_len(cid_len, sid_len, CONTEXT_KEY_LEN);
     //Sender Key
     info_buffer_size = get_info_len(cid_len, sid_len, CONTEXT_KEY_LEN);
-    compose_info(&info_buffer, cid, cid_len, alg, sid, sid_len, CONTEXT_KEY_LEN);
+    compose_info(info_buffer, cid, cid_len, alg, sid, sid_len, CONTEXT_KEY_LEN);
     hkdf(SHA256, zeroes, 32, master_secret, master_secret_len, info_buffer, info_buffer_size, sender_ctx->SENDER_KEY, CONTEXT_KEY_LEN );
 
     //Sender IV
     info_buffer_size = get_info_len(cid_len, sid_len, CONTEXT_INIT_VECT_LEN);
-    compose_info(&info_buffer, cid, cid_len, alg, sid, sid_len, CONTEXT_INIT_VECT_LEN);
+    compose_info(info_buffer, cid, cid_len, alg, sid, sid_len, CONTEXT_INIT_VECT_LEN);
     hkdf(SHA256, zeroes, 32, master_secret, master_secret_len, info_buffer, info_buffer_size, sender_ctx->SENDER_IV, CONTEXT_INIT_VECT_LEN );
 
     //Receiver Key
     info_buffer_size = get_info_len(cid_len, rid_len, CONTEXT_KEY_LEN);
-    compose_info(&info_buffer, cid, cid_len, alg, rid, rid_len, CONTEXT_KEY_LEN);
+    compose_info(info_buffer, cid, cid_len, alg, rid, rid_len, CONTEXT_KEY_LEN);
     hkdf(SHA256, zeroes, 32, master_secret, master_secret_len, info_buffer, info_buffer_size, recipient_ctx->RECIPIENT_KEY, CONTEXT_KEY_LEN );
 
     //Receiver IV
     info_buffer_size = get_info_len(cid_len, rid_len, CONTEXT_INIT_VECT_LEN);
-    compose_info(&info_buffer, cid, cid_len, alg, rid, rid_len, CONTEXT_INIT_VECT_LEN);
+    compose_info(info_buffer, cid, cid_len, alg, rid, rid_len, CONTEXT_INIT_VECT_LEN);
     hkdf(SHA256, zeroes, 32, master_secret, master_secret_len, info_buffer, info_buffer_size, recipient_ctx->RECIPIENT_IV, CONTEXT_INIT_VECT_LEN );
 
     common_ctx->BASE_KEY = master_secret;
@@ -290,6 +290,7 @@ sending the response, the Tid has value (Cid, Recipient ID, seq),
 where seq is the value of the "Partial IV" in the COSE
 object of the request (see Section 5);
 */
+/*
 uint8_t oscoap_prepare_tid(uint8_t* buffer, OSCOAP_COMMON_CONTEXT* ctx, uint8_t sending){
   uint8_t offset = 0;
   uint8_t seq_buffer[CONTEXT_SEQ_LEN];
@@ -341,8 +342,8 @@ size_t  oscoap_prepare_response_external_aad(coap_packet_t* coap_pkt, uint8_t* b
   }
   return ret;
 }
-
-
+*/
+/*
 #define PRINT6ADDR(addr) PRINTF("[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7], ((uint8_t *)addr)[8], ((uint8_t *)addr)[9], ((uint8_t *)addr)[10], ((uint8_t *)addr)[11], ((uint8_t *)addr)[12], ((uint8_t *)addr)[13], ((uint8_t *)addr)[14], ((uint8_t *)addr)[15])
 
 
@@ -383,8 +384,8 @@ size_t oscoap_prepare_unencrypted_uri(coap_packet_t* coap_pkt, uint8_t* buffer, 
 //  oscoap_printf_hex(buffer, ret);
   return ret;
 
-}
-
+}*/
+/*
 size_t oscoap_prepare_request_external_aad(coap_packet_t* coap_pkt, uint8_t* buffer, uint8_t sender){
   uint8_t uri[60];
 	int uri_len = oscoap_prepare_unencrypted_uri(coap_pkt, uri, sender);
@@ -398,6 +399,51 @@ size_t oscoap_prepare_request_external_aad(coap_packet_t* coap_pkt, uint8_t* buf
 	
   return ret;
 }
+*/
+size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, uint8_t* buffer, uint8_t server, uint8_t sender){
+  uint8_t ret = 0;
+  ret += OPT_CBOR_put_array(&buffer, 5);
+  ret += OPT_CBOR_put_unsigned(&buffer, 1); //version is always 1
+  ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->code)); //COAP code is one byte //TODO should be
+  ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->context->ALG));
+
+  if( server ){
+    OSCOAP_RECIPIENT_CONTEXT* ctx  = coap_pkt->context->RECIPIENT_CONTEXT;
+    ret += OPT_CBOR_put_bytes(&buffer, ctx->RECIPIENT_ID_LEN, ctx->RECIPIENT_ID);
+  } else {
+    OSCOAP_SENDER_CONTEXT* ctx = coap_pkt->context->SENDER_CONTEXT;
+    ret += OPT_CBOR_put_bytes(&buffer, ctx->SENDER_ID_LEN, ctx->SENDER_ID);
+
+  }
+
+  if( sender ){
+    OSCOAP_SENDER_CONTEXT* ctx2 = coap_pkt->context->SENDER_CONTEXT;
+    ret += OPT_CBOR_put_bytes(&buffer, CONTEXT_INIT_VECT_LEN, ctx2->SENDER_IV);
+  } else {
+    OSCOAP_RECIPIENT_CONTEXT* ctx2 = coap_pkt->context->RECIPIENT_CONTEXT;
+    ret += OPT_CBOR_put_bytes(&buffer, CONTEXT_INIT_VECT_LEN, ctx2->RECIPIENT_IV);
+  }
+
+  return ret;
+
+}
+
+size_t oscoap_external_aad_size(coap_packet_t* coap_pkt ){
+  size_t ret = 0;
+  if(coap_is_request(coap_pkt)){
+      ret += 7;
+   //   ret += coap_get_header_uri_path(coap_pkt, NULL);
+      ret += 55; //upper bound ish for IP ADDR
+  } else { // Response
+      ret += 8+ID_LEN+CONTEXT_SEQ_LEN; // TID
+      ret += 7;
+  }
+
+  //return ret;
+  return 20; //TODO FIX THIS!
+}
+
+
 
 void oscoap_increment_sender_seq(OSCOAP_COMMON_CONTEXT* ctx){
     ctx->SENDER_CONTEXT->SENDER_SEQ++; 
@@ -446,20 +492,6 @@ void create_iv(uint8_t* iv, uint8_t* out, uint8_t* seq, int seq_len ){
 
 }
 
-size_t oscoap_external_aad_size(coap_packet_t* coap_pkt){
-  size_t ret = 0;
-  if(coap_is_request(coap_pkt)){
-      ret += 7;
-   //   ret += coap_get_header_uri_path(coap_pkt, NULL);
-      ret += 55; //upper bound ish for IP ADDR
-  } else { // Response
-      ret += 8+ID_LEN+CONTEXT_SEQ_LEN; // TID
-      ret += 7;
-  }
-
-  return ret;
-}
-
 
 size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
     
@@ -501,16 +533,17 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   size_t external_aad_size = oscoap_external_aad_size(coap_pkt); // this is a upper bound of the size
   uint8_t external_aad_buffer[external_aad_size]; 
   
+  //TDOD FIX 1 and 0 to proper defined constants
   if(coap_is_request(coap_pkt)){
       PRINTF("we have a request!\n");
-
-      external_aad_size = oscoap_prepare_request_external_aad(coap_pkt, external_aad_buffer, 1); 
+      external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, 0, 1);
+   //   external_aad_size = oscoap_prepare_request_external_aad(coap_pkt, external_aad_buffer, 1); 
       printf("external aad \n");
       oscoap_printf_hex(external_aad_buffer, external_aad_size);
   } else {
       PRINTF("we have a response!\n");
-      
-      external_aad_size = oscoap_prepare_response_external_aad(coap_pkt, external_aad_buffer, 1);
+      external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, 1, 1);
+   //   external_aad_size = oscoap_prepare_response_external_aad(coap_pkt, external_aad_buffer, 1);
       printf("external aad \n");
       oscoap_printf_hex(external_aad_buffer, external_aad_size);
   }
@@ -609,12 +642,14 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
   
     if(coap_is_request(coap_pkt)){//this should match reqests
         PRINTF("we have a incomming request!\n");
-        external_aad_size = oscoap_prepare_request_external_aad(coap_pkt, external_aad_buffer, 0);
+        external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, 0 , 1);
+      //  external_aad_size = oscoap_prepare_request_external_aad(coap_pkt, external_aad_buffer, 0);
       //  printf("external aad \n");
       //  oscoap_printf_hex(external_aad_buffer, external_aad_size);
     } else {
         PRINTF("we have a incomming response!\n");
-        external_aad_size = oscoap_prepare_response_external_aad(coap_pkt, external_aad_buffer, 0);
+        external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, 0 , 0);
+      //  external_aad_size = oscoap_prepare_response_external_aad(coap_pkt, external_aad_buffer, 0);
       //  printf("external aad \n");
       //  oscoap_printf_hex(external_aad_buffer, external_aad_size); 
     }
