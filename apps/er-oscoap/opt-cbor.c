@@ -37,7 +37,7 @@ uint8_t OPT_CBOR_put_text(uint8_t **buffer, char *text, uint8_t text_len){
 
 uint8_t OPT_CBOR_put_array(uint8_t **buffer,uint8_t elements){
 	if(elements > 15){
-		PRINTF("put array error\n");
+		PRINTF("ERROR! in put array\n");
 		return 0;
 	}
 
@@ -66,7 +66,7 @@ uint8_t OPT_CBOR_put_bytes(uint8_t **buffer, uint8_t bytes_len, uint8_t *bytes){
 }
 uint8_t OPT_CBOR_put_map(uint8_t **buffer, uint8_t elements){
 	if(elements > 15){
-		PRINTF("error in map\n");
+		PRINTF("ERROR in put map\n");
 		return 0;
 	}
 	**buffer = (0xa0 | elements);
@@ -76,9 +76,12 @@ uint8_t OPT_CBOR_put_map(uint8_t **buffer, uint8_t elements){
 }
 
 uint8_t OPT_CBOR_put_unsigned(uint8_t **buffer, uint8_t value){
-	if(value > 0x17){
-		PRINTF("error in unsigned\n");
-		return 0;
+	if(value > 0x17 && value <= 0xFF){
+			(**buffer) = (0x18);
+			(*buffer)++;
+			(**buffer) = (value);
+			(*buffer)++;
+		return 2;
 	}
 	(**buffer) = (value);
 	(*buffer)++;
