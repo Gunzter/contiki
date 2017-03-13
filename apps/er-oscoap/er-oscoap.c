@@ -57,9 +57,6 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif /* OSCOAP_DEBUG */
 
 
-
-
-
 void parse_int(uint32_t in, uint8_t* bytes, int out_len){ 
 	int x = out_len - 1;
 	while(x >= 0){
@@ -260,8 +257,8 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   uint8_t aad_buffer[aad_length];
   uint8_t *tmp_buffer = aad_buffer;
   aad_length = OPT_COSE_Build_AAD(&cose, tmp_buffer);
-  printf("serialized aad\n");
-  oscoap_printf_hex(aad_buffer, aad_length);
+  //printf("serialized aad\n");
+  //oscoap_printf_hex(aad_buffer, aad_length);
   OPT_COSE_SetAAD(&cose, aad_buffer, aad_length);
    
   size_t ciphertext_len = cose.plaintext_len + 8; 
