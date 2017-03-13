@@ -346,15 +346,10 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     if(coap_is_request(coap_pkt)){//this should match reqests
         PRINTF("we have a incomming request!\n");
         external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, 0, cose.partial_iv, cose.partial_iv_len );
-      //  external_aad_size = oscoap_prepare_request_external_aad(coap_pkt, external_aad_buffer, 0);
-      //  printf("external aad \n");
-      //  oscoap_printf_hex(external_aad_buffer, external_aad_size);
+
     } else {
         PRINTF("we have a incomming response!\n");
         external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, 0, cose.partial_iv, cose.partial_iv_len );
-      //  external_aad_size = oscoap_prepare_response_external_aad(coap_pkt, external_aad_buffer, 0);
-      //  printf("external aad \n");
-      //  oscoap_printf_hex(external_aad_buffer, external_aad_size); 
     }
     printf("external aad\n");
     oscoap_printf_hex(external_aad_buffer, external_aad_size);
