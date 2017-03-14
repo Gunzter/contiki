@@ -86,8 +86,8 @@ OscoapCommonContext* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t* m
     compose_info(info_buffer, cid, cid_len, alg, rid, rid_len, CONTEXT_INIT_VECT_LEN);
     hkdf(SHA256, zeroes, 32, master_secret, master_secret_len, info_buffer, info_buffer_size, recipient_ctx->RecipientIv, CONTEXT_INIT_VECT_LEN );
 
-    common_ctx->BaseKey = master_secret;
-    common_ctx->BaseKeyLen = master_secret_len;
+    common_ctx->MasterSecret = master_secret;
+    common_ctx->MasterSecretLen = master_secret_len;
     common_ctx->Alg = alg;
     memcpy(common_ctx->ContextId, cid, CONTEXT_ID_LEN);
     common_ctx->RecipientContext = recipient_ctx;
@@ -185,7 +185,7 @@ int oscoap_free_ctx(OscoapCommonContext *ctx){
         ctx_ptr->NextContext = NULL;
       }
     }
-    memset(ctx->BaseKey, 0x00, ctx->BaseKeyLen);
+    memset(ctx->MasterSecret, 0x00, ctx->MasterSecretLen);
     memset(ctx->SenderContext->SenderKey, 0x00, CONTEXT_KEY_LEN);
     memset(ctx->SenderContext->SenderIv, 0x00, CONTEXT_INIT_VECT_LEN);
     memset(ctx->RecipientContext->RecipientKey, 0x00, CONTEXT_KEY_LEN);
@@ -197,4 +197,34 @@ int oscoap_free_ctx(OscoapCommonContext *ctx){
     ret += memb_free(&common_contexts, ctx);
   
     return ret;
+}
+
+void oscoap_print_context(OscoapCommonContext* ctx){
+    PRINTF("Print Context:\n");
+    PRINTF("Context ID: ");
+    oscoap_printf_hex(ctx->ContextId, CONTEXT_ID_LEN);
+    PRINTF("Base Key: ");
+    oscoap_printf_hex(ctx->MasterSecret, ctx->MasterSecretLen);
+    PRINTF("ALG: %d\n", ctx->Alg);
+
+    OscoapSenderContext* s = ctx->SenderContext;
+    PRINTF("Sender Context: {\n");
+    PRINTF("\tSender ID: ");
+    oscoap_printf_hex(s->SenderId, ID_LEN);
+    PRINTF("\tSender Key: ");
+    oscoap_printf_hex(s->SenderKey, CONTEXT_KEY_LEN);
+    PRINTF("\tSender IV: ");
+    oscoap_printf_hex(s->SenderIv, CONTEXT_INIT_VECT_LEN);
+    PRINTF("}\n");
+
+    OscoapRecipientContext* r = ctx->RecipientContext;
+    PRINTF("Recipient Context: {\n");
+    PRINTF("\tRecipient ID: ");
+    oscoap_printf_hex(r->RecipientId, ID_LEN);
+    PRINTF("\tRecipient Key: ");
+    oscoap_printf_hex(r->RecipientKey, CONTEXT_KEY_LEN);
+    PRINTF("\tRecipient IV: ");
+    oscoap_printf_hex(r->RecipientIv, CONTEXT_INIT_VECT_LEN);
+    PRINTF("}\n");
+  
 }

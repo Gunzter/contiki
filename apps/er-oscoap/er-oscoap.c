@@ -776,32 +776,3 @@ void oscoap_printf_bin(unsigned char *data, unsigned int len){
 	PRINTF("\n");
 }
 
-void oscoap_print_context(OscoapCommonContext* ctx){
-    PRINTF("Print Context:\n");
-    PRINTF("Context ID: ");
-    oscoap_printf_hex(ctx->ContextId, CONTEXT_ID_LEN);
-    PRINTF("Base Key: ");
-    oscoap_printf_hex(ctx->BaseKey, ctx->BaseKeyLen);
-    PRINTF("ALG: %d\n", ctx->Alg);
-
-    OscoapSenderContext* s = ctx->SenderContext;
-    PRINTF("Sender Context: {\n");
-    PRINTF("\tSender ID: ");
-    oscoap_printf_hex(s->SenderId, ID_LEN);
-    PRINTF("\tSender Key: ");
-    oscoap_printf_hex(s->SenderKey, CONTEXT_KEY_LEN);
-    PRINTF("\tSender IV: ");
-    oscoap_printf_hex(s->SenderIv, CONTEXT_INIT_VECT_LEN);
-    PRINTF("}\n");
-
-    OscoapRecipientContext* r = ctx->RecipientContext;
-    PRINTF("Recipient Context: {\n");
-    PRINTF("\tRecipient ID: ");
-    oscoap_printf_hex(r->RecipientId, ID_LEN);
-    PRINTF("\tRecipient Key: ");
-    oscoap_printf_hex(r->RecipientKey, CONTEXT_KEY_LEN);
-    PRINTF("\tRecipient IV: ");
-    oscoap_printf_hex(r->RecipientIv, CONTEXT_INIT_VECT_LEN);
-    PRINTF("}\n");
-  
-}

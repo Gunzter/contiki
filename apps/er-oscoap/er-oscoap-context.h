@@ -48,9 +48,11 @@ struct OscoapRecipientContext
 };
 
 struct OscoapCommonContext{
-  uint8_t ContextId[CONTEXT_ID_LEN];
-  uint8_t* BaseKey;
-  size_t BaseKeyLen;
+  uint8_t   ContextId[CONTEXT_ID_LEN];
+  uint8_t*  MasterSecret;
+  size_t    MasterSecretLen;
+  uint8_t*  MasterSalt;
+  size_t    MasterSaltLen;
   OscoapSenderContext* SenderContext;
   OscoapRecipientContext* RecipientContext;
   OscoapCommonContext* NextContext;
