@@ -147,7 +147,7 @@ if(oscoap_derrive_ctx(context_id, CONTEXT_ID_LEN, master_secret, 24, 12 , 1,
   }
 
 
-  OSCOAP_COMMON_CONTEXT* c = NULL;
+  OscoapCommonContext* c = NULL;
   uint8_t cid2[CONTEXT_ID_LEN] =  {0xCA, 0xFE, 0xF0, 0x0D, 0xBA, 0xAD, 0xC0, 0xDE };
   c = oscoap_find_ctx_by_cid(cid2);
   PRINTF("COAP max size %d\n", COAP_MAX_PACKET_SIZE);
@@ -173,7 +173,7 @@ if(oscoap_derrive_ctx(context_id, CONTEXT_ID_LEN, master_secret, 24, 12 , 1,
   	printf("Error: Could not create new Context!\n");
 	}
 	
-	OSCOAP_COMMON_CONTEXT* c = NULL;
+	OscoapCommonContext* c = NULL;
   uint8_t cid2[CONTEXT_ID_LEN] =  { 0x4B, 0x65, 0x79, 0x23, 0x30};
   c = oscoap_find_ctx_by_cid(cid2);
   PRINTF("COAP max size %d\n", COAP_MAX_PACKET_SIZE);

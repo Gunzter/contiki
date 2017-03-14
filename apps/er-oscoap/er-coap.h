@@ -139,7 +139,7 @@
   size_t object_security_len;
   uint8_t* object_security;
   uip_ipaddr_t* ipaddr;
-  OSCOAP_COMMON_CONTEXT* context;
+  OscoapCommonContext* context;
 
 
   uint16_t payload_len;

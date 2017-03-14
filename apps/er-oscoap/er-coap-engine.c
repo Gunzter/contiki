@@ -117,7 +117,7 @@ coap_receive(void)
             coap_init_message(response, COAP_TYPE_ACK, CONTENT_2_05,
                               message->mid);
       	    if(message->context != NULL){
-			       PRINTF("1 Setting OSCOAP on response with CID: %d\n", message->context->CONTEXT_ID);
+			       PRINTF("1 Setting OSCOAP on response with CID: %d\n", message->context->ContextId);
 		    	   response->context = message->context;
 			       coap_set_header_object_security(response);	
 	         }
@@ -126,7 +126,7 @@ coap_receive(void)
             coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
                               coap_get_mid());
       	    if(message->context != NULL){
-			PRINTF("2 Setting OSCOAP on response with CID: %d\n", message->context->CONTEXT_ID);
+			PRINTF("2 Setting OSCOAP on response with CID: %d\n", message->context->ContextId);
 		    	response->context = message->context;
 			coap_set_header_object_security(response);	
 	    }            /* mirror token */
@@ -302,7 +302,7 @@ coap_receive(void)
       coap_init_message(message, reply_type, erbium_status_code,
                         message->mid);
       if(message->context != NULL){
-		PRINTF("3 Setting OSCOAP on response with CID: %d\n", message->context->CONTEXT_ID);
+		PRINTF("3 Setting OSCOAP on response with CID: %d\n", message->context->ContextId);
 	    	response->context = message->context;
 		coap_set_header_object_security(response);	
       }
