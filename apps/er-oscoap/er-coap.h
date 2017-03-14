@@ -49,7 +49,7 @@
 #include "er-coap-conf.h"
 
     //For OSCOAP
-#include "er-oscoap-int.h"
+#include "er-oscoap-context.h"
 
     /* sanity check for configured values */
 #define COAP_MAX_PACKET_SIZE  (COAP_MAX_HEADER_SIZE + REST_MAX_CHUNK_SIZE)

@@ -30,7 +30,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *      Martin Gunnarsson martin.gunnarsson@sics.se and Joakim Brorsson b.joakim@gmail.com
  */
 #include "er-oscoap.h"
-#include "er-oscoap-int.h"
+//#include "er-oscoap-int.h"
 #include "er-oscoap-context.h"
 
 #include "er-coap.h"
@@ -40,6 +40,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "opt-cose.h"
 #include "opt-cbor.h"
 #include <inttypes.h>
+#include <sys/types.h>
 
 #define DEBUG 1
 #if DEBUG
@@ -240,16 +241,14 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   if(coap_is_request(coap_pkt)){
       PRINTF("we have a request!\n");
       external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, 1, NULL, 0);
-   //   external_aad_size = oscoap_prepare_request_external_aad(coap_pkt, external_aad_buffer, 1); 
-      printf("external aad \n");
-      oscoap_printf_hex(external_aad_buffer, external_aad_size);
+
   } else {
       PRINTF("we have a response!\n");
       external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, 1, NULL, 0);
-   //   external_aad_size = oscoap_prepare_response_external_aad(coap_pkt, external_aad_buffer, 1);
-      printf("external aad \n");
-      oscoap_printf_hex(external_aad_buffer, external_aad_size);
   }
+// printf("external aad \n");
+ // oscoap_printf_hex(external_aad_buffer, external_aad_size);
+
 
   OPT_COSE_SetExternalAAD(&cose, external_aad_buffer, external_aad_size);
 

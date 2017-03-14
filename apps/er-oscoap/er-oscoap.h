@@ -33,7 +33,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _OSCOAP_H
 #define _OSCOAP_H
 
-#include "er-oscoap.h"
+#include "er-oscoap-context.h"
 #include "er-coap.h"
 #include <sys/types.h>
 
@@ -44,21 +44,6 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void oscoap_printf_hex(unsigned char *data, unsigned int len);
 void oscoap_printf_char(unsigned char *data, unsigned int len);
 void oscoap_printf_bin(unsigned char *data, unsigned int len);
-void oscoap_print_context(OSCOAP_COMMON_CONTEXT* ctx);
-
-/* The number of Security Contexts available on this device */
-#define CONTEXT_NUM 1
-
-/* Functions for handling the security contexts */
-void oscoap_ctx_store_init();
-OSCOAP_COMMON_CONTEXT* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t* master_secret,
-           size_t master_secret_len, uint8_t alg, uint8_t hkdf_alg,
-            uint8_t* sid, size_t sid_len, uint8_t* rid, size_t rid_len, uint8_t replay_window);
-OSCOAP_COMMON_CONTEXT* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv, uint8_t* rw_k, uint8_t* rw_iv,
-  uint8_t* s_id, uint8_t s_id_len, uint8_t* r_id, uint8_t r_id_len, uint8_t replay_window);
-OSCOAP_COMMON_CONTEXT* oscoap_find_ctx_by_cid(uint8_t* cid);
-int oscoap_free_ctx(OSCOAP_COMMON_CONTEXT *ctx);
-
 
 
 void clear_options(coap_packet_t* coap_pkt);
