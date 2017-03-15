@@ -282,7 +282,7 @@ int coap_set_payload(void *packet, const void *payload, size_t length);
 
 //FOR OSCOAP:
 int coap_get_header_object_security(void *packet, const uint8_t **os);
-int coap_set_header_object_security_content(void *packet, const uint8_t *os, size_t os_len);
+int coap_set_header_object_security_content(void *packet, uint8_t *os, size_t os_len);
 int coap_set_header_object_security(void *packet);
 int coap_set_object_security_payload(void* packet, const uint8_t **os, size_t os_len);
 

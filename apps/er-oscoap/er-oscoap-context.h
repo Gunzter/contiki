@@ -31,7 +31,7 @@ struct OscoapSenderContext
 {
   uint8_t   SenderKey[CONTEXT_KEY_LEN];
   uint8_t   SenderIv[CONTEXT_INIT_VECT_LEN];
-  uint8_t   SenderId[ID_LEN];
+  uint8_t*  SenderId;
   uint8_t   SenderIdLen;
   uint32_t  SenderSeq;
 };
@@ -41,14 +41,14 @@ struct OscoapRecipientContext
   OscoapRecipientContext* RECIPIENT_CONTEXT; //This field facilitates easy integration of OSCOAP multicast
   uint8_t   RecipientKey[CONTEXT_KEY_LEN];
   uint8_t   RecipientIv[CONTEXT_INIT_VECT_LEN];
-  uint8_t   RecipientId[ID_LEN];
+  uint8_t*  RecipientId;
   uint8_t   RecipientIdLen;
   uint32_t  RecipientSeq;
   uint8_t   ReplayWindow;
 };
 
 struct OscoapCommonContext{
-  uint8_t   ContextId[CONTEXT_ID_LEN];
+ // uint8_t   ContextId[CONTEXT_ID_LEN];
   uint8_t*  MasterSecret;
   size_t    MasterSecretLen;
   uint8_t*  MasterSalt;
@@ -74,7 +74,9 @@ OscoapCommonContext* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t* m
 OscoapCommonContext* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv, uint8_t* rw_k, uint8_t* rw_iv,
   uint8_t* s_id, uint8_t s_id_len, uint8_t* r_id, uint8_t r_id_len, uint8_t replay_window);
 
-OscoapCommonContext* oscoap_find_ctx_by_cid(uint8_t* cid);
+//OscoapCommonContext* oscoap_find_ctx_by_cid(uint8_t* cid);
+
+OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, size_t rid_len);
 
 int oscoap_free_ctx(OscoapCommonContext *ctx);
 

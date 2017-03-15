@@ -231,7 +231,8 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
 
   OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
   OPT_COSE_SetNonce(&cose, nonce_buffer, CONTEXT_INIT_VECT_LEN);
-  OPT_COSE_SetKeyID(&cose, coap_pkt->context->ContextId, CONTEXT_ID_LEN);
+  OPT_COSE_SetKeyID(&cose, coap_pkt->context->SenderContext->SenderId,
+            coap_pkt->context->SenderContext->SenderIdLen);
 
 
   size_t external_aad_size = oscoap_external_aad_size(coap_pkt); // this is a upper bound of the size
@@ -319,7 +320,7 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
   	uint8_t nonce[CONTEXT_INIT_VECT_LEN];
 
     OscoapCommonContext* ctx;
-  	ctx = oscoap_find_ctx_by_cid(cose.kid);
+  	ctx = oscoap_find_ctx_by_rid(cose.kid, cose.kid_len);
   	if(ctx == NULL){	
   		  PRINTF("context is not fetched form DB cid: ");
         PRINTF_HEX(cose.kid, cose.kid_len);
@@ -410,7 +411,7 @@ void clear_options(coap_packet_t* coap_pkt){
 }
 
 int
-coap_set_header_object_security_content(void *packet, const uint8_t* os, size_t os_len)
+coap_set_header_object_security_content(void *packet, uint8_t* os, size_t os_len)
 {
     coap_packet_t *const coap_pkt = (coap_packet_t *)packet;
     if(IS_OPTION(coap_pkt, COAP_OPTION_OBJECT_SECURITY)){

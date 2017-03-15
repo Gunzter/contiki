@@ -1,7 +1,24 @@
 
 #include "er-oscoap-context.h"
+#include "er-oscoap.h"
 #include "opt-cbor.h"
 #include "opt-cose.h"
+
+
+#define DEBUG 1
+#if DEBUG
+#include <stdio.h>
+#define PRINTF(...) printf(__VA_ARGS__)
+#define PRINTF_HEX(data, len)  oscoap_printf_hex(data, len)
+#define PRINTF_CHAR(data, len)   oscoap_printf(data, len)
+#define PRINTF_BIN(data, len)  oscoap_printf_bin(data, len)
+
+#else /* DEBUG */
+#define PRINTF(...)
+#define PRINTF_HEX(data, len)
+#define PRINTF_CHAR(data, len)
+#define PRINTF_BIN(data, len)
+#endif /* OSCOAP_DEBUG */
 
 OscoapCommonContext *common_context_store = NULL;
 
@@ -89,7 +106,7 @@ OscoapCommonContext* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t* m
     common_ctx->MasterSecret = master_secret;
     common_ctx->MasterSecretLen = master_secret_len;
     common_ctx->Alg = alg;
-    memcpy(common_ctx->ContextId, cid, CONTEXT_ID_LEN);
+  //  memcpy(common_ctx->ContextId, cid, CONTEXT_ID_LEN);
     common_ctx->RecipientContext = recipient_ctx;
     common_ctx->SenderContext = sender_ctx;
     sender_ctx->SenderSeq = 0;
@@ -98,8 +115,8 @@ OscoapCommonContext* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t* m
     recipient_ctx->ReplayWindow = replay_window;
    
    //TODO add checks to assert ( rid_len < ID_LEN && cid_len < ID_len)
-    memcpy(recipient_ctx->RecipientId, rid, rid_len);
-    memcpy(sender_ctx->SenderId, sid, sid_len);
+    recipient_ctx->RecipientId = rid;
+    sender_ctx->SenderId = sid;
     recipient_ctx->RecipientIdLen = rid_len;
     sender_ctx->SenderIdLen = sid_len;
 
@@ -124,7 +141,7 @@ OscoapCommonContext* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv
     if(sender_ctx == NULL) return 0;
 
     common_ctx->Alg = COSE_Algorithm_AES_CCM_64_64_128;
-    memcpy(common_ctx->ContextId, cid, CONTEXT_ID_LEN);
+
     common_ctx->RecipientContext = recipient_ctx;
     common_ctx->SenderContext = sender_ctx;
 
@@ -138,8 +155,9 @@ OscoapCommonContext* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv
     recipient_ctx->ReplayWindow = replay_window;
    
     //TODO This is to easly identify the sender and recipient ID
-    memcpy(recipient_ctx->RecipientId, r_id, r_id_len);
-    memcpy(sender_ctx->SenderId, s_id, s_id_len);
+    printf("rid ptr %p\n", recipient_ctx->RecipientId);
+    recipient_ctx->RecipientId = r_id;
+    sender_ctx->SenderId =  s_id;
     recipient_ctx->RecipientIdLen = r_id_len;
     sender_ctx->SenderIdLen = s_id_len;
 
@@ -148,7 +166,7 @@ OscoapCommonContext* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv
     
     return common_ctx;
 }
-
+/*
 OscoapCommonContext* oscoap_find_ctx_by_cid(uint8_t* cid){
     if(common_context_store == NULL){
       return NULL;
@@ -159,6 +177,28 @@ OscoapCommonContext* oscoap_find_ctx_by_cid(uint8_t* cid){
     while(memcmp(ctx_ptr->ContextId, cid, CONTEXT_ID_LEN) != 0){
       ctx_ptr = ctx_ptr->NextContext;
     
+      if(ctx_ptr == NULL){
+        return NULL;
+      }
+    }
+    return ctx_ptr;
+} */
+
+OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, size_t rid_len){
+    if(common_context_store == NULL){
+      return NULL;
+    }
+    printf("looking for:\n");
+    oscoap_printf_hex(rid, rid_len);
+
+    OscoapCommonContext *ctx_ptr = common_context_store;
+    size_t cmp_len = MIN(rid_len, ctx_ptr->RecipientContext->RecipientIdLen);
+
+    while(memcmp(ctx_ptr->RecipientContext->RecipientId, rid, cmp_len) != 0){
+     printf("tried:\n");
+    oscoap_printf_hex(ctx_ptr->RecipientContext->RecipientId, ctx_ptr->RecipientContext->RecipientIdLen);
+      ctx_ptr = ctx_ptr->NextContext;
+      cmp_len = MIN(rid_len, ctx_ptr->RecipientContext->RecipientIdLen);
       if(ctx_ptr == NULL){
         return NULL;
       }
@@ -201,8 +241,8 @@ int oscoap_free_ctx(OscoapCommonContext *ctx){
 
 void oscoap_print_context(OscoapCommonContext* ctx){
     PRINTF("Print Context:\n");
-    PRINTF("Context ID: ");
-    oscoap_printf_hex(ctx->ContextId, CONTEXT_ID_LEN);
+  //  PRINTF("Context ID: ");
+  //  oscoap_printf_hex(ctx->ContextId, CONTEXT_ID_LEN);
     PRINTF("Base Key: ");
     oscoap_printf_hex(ctx->MasterSecret, ctx->MasterSecretLen);
     PRINTF("ALG: %d\n", ctx->Alg);

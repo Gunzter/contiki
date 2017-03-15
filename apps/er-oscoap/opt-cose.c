@@ -30,6 +30,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *      Martin Gunnarsson martin.gunnarsson@sics.se and Joakim Brorsson b.joakim@gmail.com
  */
 #include "opt-cose.h"
+#include "opt-cbor.h"
 #include "cose-aes-ccm.h"
 #include <string.h>
 #include "er-oscoap.h"
@@ -329,6 +330,7 @@ size_t OPT_COSE_Decode(opt_cose_encrypt_t *cose, uint8_t *buffer, size_t buffer_
 		}
 		
 	}
+	return 0;
 }
 
 
