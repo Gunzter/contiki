@@ -32,7 +32,6 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _OPT_COSE_H
 #define _OPT_COSE_H
 #include <stddef.h>
-#include "er-oscoap.h"
 #include <inttypes.h>
 
 typedef struct opt_cose_encrypt_t{

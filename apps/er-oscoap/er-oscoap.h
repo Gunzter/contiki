@@ -36,6 +36,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "er-oscoap-context.h"
 #include "er-coap.h"
 #include <sys/types.h>
+#include "opt-cose.h"
 
 #define CLEAR_OPTION(packet, opt) ((packet)->options[opt / OPTION_MAP_SIZE] &= ~(1 << (opt % OPTION_MAP_SIZE))) //clear one bit
 
@@ -45,7 +46,7 @@ void oscoap_printf_hex(unsigned char *data, unsigned int len);
 void oscoap_printf_char(unsigned char *data, unsigned int len);
 void oscoap_printf_bin(unsigned char *data, unsigned int len);
 
-size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, uint8_t* buffer, uint8_t sending);
+size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* cose,  uint8_t* buffer, uint8_t sending);
 
 void clear_options(coap_packet_t* coap_pkt);
 
