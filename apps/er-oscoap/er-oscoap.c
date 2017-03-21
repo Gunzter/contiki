@@ -226,41 +226,7 @@ void create_iv(uint8_t* iv, uint8_t* out, uint8_t* seq, int seq_len ){
 
 
 
-
-uint8_t checkIncomingSeq(OscoapRecipientContext* ctx, int incomming_seq) {
-        if (ctx->LastSeq >= OSCOAP_SEQ_MAX) {
-            return OSCOAP_SEQ_WRAPPED;
-        }
-        ctx->RollbackLastSeq = ctx->LastSeq; //recipient_seq;
-        ctx->RollbackSlidingWindow = ctx->SlidingWindow;
-
-        if (incomming_seq > ctx->LastSeq) {
-            //Update the replay window
-            int shift = incomming_seq - ctx->LastSeq;
-            ctx->SlidingWindow = ctx->SlidingWindow << shift;
-            ctx->LastSeq = incomming_seq;
-            
-            
-        } else if (incomming_seq == ctx->LastSeq) {
-            return OSCOAP_SEQ_REPLAY;
-        } else { //seq < this.recipient_seq
-            if (incomming_seq + ctx->ReplayWindowSize < ctx->LastSeq) {
-              return OSCOAP_SEQ_OLD_MESSAGE;
-            }
-            // seq+replay_window_size > recipient_seq
-            int shift = ctx->LastSeq - incomming_seq;
-            uint64_t pattern = 1 << shift;
-            uint64_t verifier = ctx->SlidingWindow & pattern;
-            verifier = verifier >> shift;
-            if (verifier == 1) {
-                return OSCOAP_SEQ_REPLAY;
-            }
-            ctx->SlidingWindow = ctx->SlidingWindow | pattern;
-        }
-        return 0;
-}
-
-void rollBack(OscoapRecipientContext* ctx) {
+void roll_back(OscoapRecipientContext* ctx) {
   if (ctx->RollbackSlidingWindow != 0) {
       ctx->SlidingWindow =  ctx->RollbackSlidingWindow; 
       ctx->RollbackSlidingWindow = 0;
@@ -437,6 +403,7 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     OPT_COSE_SetContent(&cose, plaintext_buffer, plaintext_len);
 
     if(OPT_COSE_Decrypt(&cose, ctx->RecipientContext->RecipientKey, CONTEXT_KEY_LEN)){
+      roll_back(ctx->RecipientContext);
       return OSCOAP_CRYPTO_ERROR;
     }
     ctx->RecipientContext->LastSeq = cose.partial_iv[0];
