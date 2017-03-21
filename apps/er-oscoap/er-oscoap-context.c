@@ -109,10 +109,13 @@ OscoapCommonContext* oscoap_derrive_ctx(uint8_t* cid, size_t cid_len, uint8_t* m
   //  memcpy(common_ctx->ContextId, cid, CONTEXT_ID_LEN);
     common_ctx->RecipientContext = recipient_ctx;
     common_ctx->SenderContext = sender_ctx;
-    sender_ctx->SenderSeq = 0;
+    sender_ctx->Seq = 0;
 
-    recipient_ctx->RecipientSeq = 0;
-    recipient_ctx->ReplayWindow = replay_window;
+    recipient_ctx->LastSeq = 0;
+    recipient_ctx->ReplayWindowSize = replay_window;
+    recipient_ctx->RollbackLastSeq = 0;
+    recipient_ctx->SlidingWindow = 0;
+    recipient_ctx->RollbackSlidingWindow = 0;
    
    //TODO add checks to assert ( rid_len < ID_LEN && cid_len < ID_len)
     recipient_ctx->RecipientId = rid;
@@ -147,12 +150,16 @@ OscoapCommonContext* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv
 
     memcpy(sender_ctx->SenderKey, sw_k, CONTEXT_KEY_LEN);
     memcpy(sender_ctx->SenderIv, sw_iv, CONTEXT_INIT_VECT_LEN);
-    sender_ctx->SenderSeq = 0;
+    sender_ctx->Seq = 0;
 
     memcpy(recipient_ctx->RecipientKey, rw_k, CONTEXT_KEY_LEN);
     memcpy(recipient_ctx->RecipientIv, rw_iv, CONTEXT_INIT_VECT_LEN);
-    recipient_ctx->RecipientSeq = 0;
-    recipient_ctx->ReplayWindow = replay_window;
+    recipient_ctx->LastSeq = 0;
+    recipient_ctx->ReplayWindowSize = replay_window;
+    recipient_ctx->RollbackLastSeq = 0;
+    recipient_ctx->SlidingWindow = 0;
+    recipient_ctx->RollbackSlidingWindow = 0;
+
    
     //TODO This is to easly identify the sender and recipient ID
     printf("rid ptr %p\n", recipient_ctx->RecipientId);
@@ -199,6 +206,28 @@ OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, size_t rid_len){
     oscoap_printf_hex(ctx_ptr->RecipientContext->RecipientId, ctx_ptr->RecipientContext->RecipientIdLen);
       ctx_ptr = ctx_ptr->NextContext;
       cmp_len = MIN(rid_len, ctx_ptr->RecipientContext->RecipientIdLen);
+      if(ctx_ptr == NULL){
+        return NULL;
+      }
+    }
+    return ctx_ptr;
+}
+
+OscoapCommonContext* oscoap_find_ctx_by_token(uint8_t* token, uint8_t token_len){
+    if(common_context_store == NULL){
+      return NULL;
+    }
+    PRINTF("looking for:\n");
+    oscoap_printf_hex(token, token_len);
+
+    OscoapCommonContext *ctx_ptr = common_context_store;
+    size_t cmp_len = MIN(token_len, ctx_ptr->SenderContext->TokenLen);
+
+    while(memcmp(ctx_ptr->SenderContext->SenderId, token, cmp_len) != 0){
+     PRINTF("tried:\n");
+     oscoap_printf_hex(ctx_ptr->SenderContext->Token, ctx_ptr->SenderContext->TokenLen);
+      ctx_ptr = ctx_ptr->NextContext;
+      cmp_len = MIN(token_len, ctx_ptr->SenderContext->TokenLen);
       if(ctx_ptr == NULL){
         return NULL;
       }

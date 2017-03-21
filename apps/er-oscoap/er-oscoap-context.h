@@ -23,6 +23,8 @@
 
 #define ID_LEN 6
 
+#define OSCOAP_SEQ_MAX 255 //TODO calculate the real value
+
 typedef struct OscoapSenderContext OscoapSenderContext;
 typedef struct OscoapRecipientContext OscoapRecipientContext;
 typedef struct OscoapCommonContext OscoapCommonContext;
@@ -33,7 +35,9 @@ struct OscoapSenderContext
   uint8_t   SenderIv[CONTEXT_INIT_VECT_LEN];
   uint8_t*  SenderId;
   uint8_t   SenderIdLen;
-  uint32_t  SenderSeq;
+  uint32_t  Seq;
+  uint64_t  Token;
+  uint8_t   TokenLen;
 };
 
 struct OscoapRecipientContext
@@ -43,8 +47,12 @@ struct OscoapRecipientContext
   uint8_t   RecipientIv[CONTEXT_INIT_VECT_LEN];
   uint8_t*  RecipientId;
   uint8_t   RecipientIdLen;
-  uint32_t  RecipientSeq;
-  uint8_t   ReplayWindow;
+  uint64_t  SlidingWindow;
+  uint8_t   ReplayWindowSize;
+  uint64_t  LastSeq;
+
+  uint64_t   RollbackSlidingWindow;
+  uint64_t   RollbackLastSeq;
 };
 
 struct OscoapCommonContext{
@@ -59,7 +67,7 @@ struct OscoapCommonContext{
   uint8_t Alg;
 };
 
-
+/* This is the number of contexts that the store can handle */
 #define CONTEXT_NUM 1
 
 void oscoap_ctx_store_init();
@@ -77,6 +85,7 @@ OscoapCommonContext* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv
 //OscoapCommonContext* oscoap_find_ctx_by_cid(uint8_t* cid);
 
 OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, size_t rid_len);
+OscoapCommonContext* oscoap_find_ctx_by_token(uint8_t* token, uint8_t token_len);
 
 int oscoap_free_ctx(OscoapCommonContext *ctx);
 

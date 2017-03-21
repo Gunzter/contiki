@@ -45,10 +45,13 @@ void oscoap_printf_hex(unsigned char *data, unsigned int len);
 void oscoap_printf_char(unsigned char *data, unsigned int len);
 void oscoap_printf_bin(unsigned char *data, unsigned int len);
 
+size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, uint8_t* buffer);
 
 void clear_options(coap_packet_t* coap_pkt);
+
 size_t oscoap_prepare_message(void* packet, uint8_t* buffer);
 coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt);
+
 void oscoap_restore_packet(void* packet);
 size_t oscoap_prepare_plaintext(void* packet, uint8_t* plaintext_buffer);
 
