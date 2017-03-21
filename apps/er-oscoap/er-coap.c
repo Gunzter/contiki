@@ -472,7 +472,7 @@ coap_status_t coap_parse_message(void *packet, uint8_t *data,
     //described in Section 6.1.  If it cannot be verified that the
     //Sequence Number has not been received before, the server MUST
     //stop processing the request.
-    int OSCOAP = 0;    
+  int OSCOAP = 0;    
   PRINTF("Parsing incommign message!\n");
   oscoap_printf_hex(data, data_len);
 

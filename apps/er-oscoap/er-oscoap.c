@@ -59,6 +59,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 void parse_int(uint64_t in, uint8_t* bytes, int out_len){ 
+  printf("out_len %d\n", out_len);
 	int x = out_len - 1;
 	while(x >= 0){
 		bytes[x] = (in >> (x * 8)) & 0xFF;
@@ -70,10 +71,17 @@ void parse_int(uint64_t in, uint8_t* bytes, int out_len){
 uint8_t to_bytes(uint64_t in, uint8_t* buffer){
 //	int outlen = log_2(in)/8 + ((in)%8 > 0) ? 1 : 0; //altough neat this does not work for in%8 == 0
 	uint8_t outlen = 1;
+
+  printf("in %" PRIu64 "\n", in);
+  printf("outlen %d in %d\n", outlen, in);
   if(in > 255){
-    in = 2;
+    printf("wtf??\n");
+    outlen = 2;
   }
+  printf("outlen %d\n", outlen);
   parse_int(in, buffer, outlen);
+  printf("SEQ BYTES in %d outlen %d\n", in, outlen);
+  oscoap_printf_hex(buffer, outlen);
 	return outlen;
 }
 
@@ -95,7 +103,7 @@ external_aad = [
    request_seq : bstr
 ]
 */
-size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, uint8_t* buffer){
+size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, uint8_t* buffer, uint8_t sending){
   uint8_t ret = 0;
   uint8_t seq_buffer[8];
   ret += OPT_CBOR_put_array(&buffer, 5);
@@ -103,20 +111,42 @@ size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, uint8_t* buffer){
   ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->code)); //COAP code is one byte //TODO should be
   ret += OPT_CBOR_put_bytes(&buffer, 0, NULL); //Options go here
   ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->context->Alg));
+  printf("ret %d\n", ret);
 
-  if(coap_is_request(coap_pkt)){
-    uint8_t seq_len = to_bytes(coap_pkt->context->SenderContext->Seq, seq_buffer);
+  if(sending == 1){
+    if(coap_is_request(coap_pkt)) {
+      printf("seq 1 1 %" PRIu64 "\n", coap_pkt->context->SenderContext->Seq);
+      uint8_t seq_len = to_bytes(coap_pkt->context->SenderContext->Seq, seq_buffer);
 
-    ret += OPT_CBOR_put_bytes(&buffer, coap_pkt->context->SenderContext->SenderIdLen, coap_pkt->context->SenderContext->SenderId);
-    ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
+      ret += OPT_CBOR_put_bytes(&buffer, coap_pkt->context->SenderContext->SenderIdLen, coap_pkt->context->SenderContext->SenderId);
+      ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
+    } else {
+      printf("seq 1 2 %" PRIu64 "\n", coap_pkt->context->RecipientContext->LastSeq);
+      uint8_t seq_len = to_bytes(coap_pkt->context->RecipientContext->LastSeq, seq_buffer);
+    printf("ret %d\n", ret);
+      ret += OPT_CBOR_put_bytes(&buffer, coap_pkt->context->RecipientContext->RecipientIdLen, coap_pkt->context->RecipientContext->RecipientId);
+    printf("ret %d\n", ret);
+      ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
+    } 
   } else {
-    uint8_t seq_len = to_bytes(coap_pkt->context->RecipientContext->LastSeq, seq_buffer);
+    if(coap_is_request(coap_pkt)){
+      printf("seq 2 1 %" PRIu64 "\n", coap_pkt->context->RecipientContext->LastSeq);
+        uint8_t seq_len = to_bytes(coap_pkt->context->RecipientContext->LastSeq, seq_buffer);
 
-    ret += OPT_CBOR_put_bytes(&buffer, coap_pkt->context->RecipientContext->RecipientIdLen, coap_pkt->context->RecipientContext->RecipientId);
-    ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
-  } 
+        ret += OPT_CBOR_put_bytes(&buffer, coap_pkt->context->RecipientContext->RecipientIdLen, coap_pkt->context->RecipientContext->RecipientId);
+        ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
+    } else {
+      printf("seq 2 2 %" PRIu64 "\n", coap_pkt->context->SenderContext->Seq);
+        uint8_t seq_len = to_bytes(coap_pkt->context->SenderContext->Seq, seq_buffer);
+      printf("ret %d\n", ret);
+        ret += OPT_CBOR_put_bytes(&buffer, coap_pkt->context->SenderContext->SenderIdLen, coap_pkt->context->SenderContext->SenderId);
+      printf("ret %d\n", ret);
+        ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
+    } 
+  }
     
   return ret;
+  
 
 }
 
@@ -146,6 +176,7 @@ void oscoap_increment_sender_seq(OscoapCommonContext* ctx){
 
 uint64_t bytes_to_uint64(uint8_t* bytes, size_t len){
   uint8_t buffer[8];
+  memset(buffer, 0, 8);
   int offset = 8 - len;
   uint64_t num;
   
@@ -161,6 +192,8 @@ uint64_t bytes_to_uint64(uint8_t* bytes, size_t len){
       (uint64_t)buffer[6] << 8  |
       (uint64_t)buffer[7];
 
+  oscoap_printf_hex(bytes, len);
+  printf("num %d\n", num);
   return num;
 }
 
@@ -168,8 +201,11 @@ uint64_t bytes_to_uint64(uint8_t* bytes, size_t len){
 uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encrypt_t *cose){
 
   uint64_t incomming_seq = bytes_to_uint64(cose->partial_iv, cose->partial_iv_len);
-
+  printf("incomming %" PRIu64 "\n", incomming_seq);
+  printf("last %" PRIu64 "\n", ctx->LastSeq);
+  oscoap_printf_hex(cose->partial_iv, cose->partial_iv_len);
    if (ctx->LastSeq >= OSCOAP_SEQ_MAX) {
+            printf("SEQ ERROR: wrapped\n");
             return OSCOAP_SEQ_WRAPPED;
         }
         ctx->RollbackLastSeq = ctx->LastSeq; //recipient_seq;
@@ -183,9 +219,11 @@ uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encry
             
             
         } else if (incomming_seq == ctx->LastSeq) {
+          printf("SEQ ERROR: replay\n");
             return OSCOAP_SEQ_REPLAY;
         } else { //seq < this.recipient_seq
             if (incomming_seq + ctx->ReplayWindowSize < ctx->LastSeq) {
+              printf("SEQ ERROR: old\n");
               return OSCOAP_SEQ_OLD_MESSAGE;
             }
             // seq+replay_window_size > recipient_seq
@@ -194,6 +232,7 @@ uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encry
             uint64_t verifier = ctx->SlidingWindow & pattern;
             verifier = verifier >> shift;
             if (verifier == 1) {
+              printf("SEQ ERROR: replay\n");
                 return OSCOAP_SEQ_REPLAY;
             }
             ctx->SlidingWindow = ctx->SlidingWindow | pattern;
@@ -282,12 +321,12 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   size_t external_aad_size = oscoap_external_aad_size(coap_pkt); // this is a upper bound of the size
   uint8_t external_aad_buffer[external_aad_size]; 
   
-  external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer);
+  external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, 1);
   if(coap_is_request(coap_pkt)){
       oscoap_increment_sender_seq(coap_pkt->context);
   } 
-// printf("external aad \n");
- // oscoap_printf_hex(external_aad_buffer, external_aad_size);
+  printf("external aad \n");
+  oscoap_printf_hex(external_aad_buffer, external_aad_size);
 
 
   OPT_COSE_SetExternalAAD(&cose, external_aad_buffer, external_aad_size);
@@ -337,19 +376,19 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
   OPT_COSE_Init(&cose);
 
   if(coap_pkt->object_security_len == 0){
-   PRINTF("DECODE COSE IN PAYLOAD\n");
-   //PRINTF("serialized incomming COSE\n");
-  //PRINTF_HEX(coap_pkt->payload, coap_pkt->payload_len);
+    PRINTF("DECODE COSE IN PAYLOAD\n");
+    //PRINTF("serialized incomming COSE\n");
+    //PRINTF_HEX(coap_pkt->payload, coap_pkt->payload_len);
     OPT_COSE_Decode(&cose, coap_pkt->payload, coap_pkt->payload_len);
-
   }else{
     PRINTF("DECODE COSE IN OPTION\n");
-  //  PRINTF("serialized incomming COSE\n");
-  //  PRINTF_HEX(coap_pkt->object_security, coap_pkt->object_security_len);
-
+    //PRINTF("serialized incomming COSE\n");
+    //PRINTF_HEX(coap_pkt->object_security, coap_pkt->object_security_len);
     OPT_COSE_Decode(&cose, coap_pkt->object_security, coap_pkt->object_security_len);
-
   }
+  printf("partial iv, key id\n");
+  oscoap_printf_hex(cose.partial_iv, cose.partial_iv_len);
+  oscoap_printf_hex(cose.kid, cose.kid_len);
 
   	uint8_t nonce[CONTEXT_INIT_VECT_LEN];
 
@@ -360,6 +399,12 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
         PRINTF_HEX(cose.kid, cose.kid_len);
         return OSCOAP_CONTEXT_NOT_FOUND;
   	}else{
+         uint8_t seq_result = oscoap_validate_receiver_seq(ctx->RecipientContext, &cose);
+        if(seq_result != 0){
+          PRINTF("SEQ Error!\n");
+          return seq_result; 
+        }
+
         size_t seq_len;
         uint8_t *seq = OPT_COSE_GetPartialIV(&cose, &seq_len);
 
@@ -368,24 +413,14 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     		OPT_COSE_SetNonce(&cose, nonce, CONTEXT_INIT_VECT_LEN); 
   	}
 
-    uint8_t seq_result = oscoap_validate_receiver_seq(ctx, &cose);
-    if(!seq_result){
-      return seq_result; 
-    }
+   
  
     OPT_COSE_SetAlg(&cose, COSE_Algorithm_AES_CCM_64_64_128);
 
     size_t external_aad_size = oscoap_external_aad_size(coap_pkt); // this is a upper bound of the size
     uint8_t external_aad_buffer[external_aad_size]; 
   
-    if(coap_is_request(coap_pkt)){//this should match reqests
-        PRINTF("we have a incomming request!\n");
-       // external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, cose.kid, cose.kid_len, cose.partial_iv, cose.partial_iv_len);
-    } else {
-        PRINTF("we have a incomming response!\n");
-     //   external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, 
-     //     ctx->RecipientContext->RecipientId, ctx->RecipientContext->RecipientIdLen, cose.partial_iv, cose.partial_iv_len);
-    }
+    external_aad_size = oscoap_prepare_external_aad(coap_pkt, external_aad_buffer, 0);
     printf("external aad\n");
     oscoap_printf_hex(external_aad_buffer, external_aad_size);
 

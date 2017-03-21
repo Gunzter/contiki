@@ -35,7 +35,7 @@ struct OscoapSenderContext
   uint8_t   SenderIv[CONTEXT_INIT_VECT_LEN];
   uint8_t*  SenderId;
   uint8_t   SenderIdLen;
-  uint32_t  Seq;
+  uint64_t  Seq;
   uint64_t  Token;
   uint8_t   TokenLen;
 };

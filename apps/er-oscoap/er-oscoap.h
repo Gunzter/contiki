@@ -45,7 +45,7 @@ void oscoap_printf_hex(unsigned char *data, unsigned int len);
 void oscoap_printf_char(unsigned char *data, unsigned int len);
 void oscoap_printf_bin(unsigned char *data, unsigned int len);
 
-size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, uint8_t* buffer);
+size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, uint8_t* buffer, uint8_t sending);
 
 void clear_options(coap_packet_t* coap_pkt);
 

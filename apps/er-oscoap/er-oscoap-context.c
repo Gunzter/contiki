@@ -162,7 +162,7 @@ OscoapCommonContext* oscoap_new_ctx( uint8_t* cid, uint8_t* sw_k, uint8_t* sw_iv
 
    
     //TODO This is to easly identify the sender and recipient ID
-    printf("rid ptr %p\n", recipient_ctx->RecipientId);
+    printf("last seq ptr %p\n", &(recipient_ctx->LastSeq));
     recipient_ctx->RecipientId = r_id;
     sender_ctx->SenderId =  s_id;
     recipient_ctx->RecipientIdLen = r_id_len;
