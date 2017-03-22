@@ -85,10 +85,10 @@
 #define COAP_MAX_OPEN_TRANSACTIONS     1 //4
 
 /* Must be <= open transactions, default is COAP_MAX_OPEN_TRANSACTIONS-1. */
-/*
+
    #undef COAP_MAX_OBSERVERS
-   #define COAP_MAX_OBSERVERS             2
- */
+   #define COAP_MAX_OBSERVERS             1 // 2
+
 
 /* Filtering .well-known/core per query can be disabled to save space. */
 #undef COAP_LINK_FORMAT_FILTERING

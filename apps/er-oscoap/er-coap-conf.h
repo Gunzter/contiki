@@ -50,7 +50,7 @@
 
 /* The number of concurrent messages that can be stored for retransmission in the transaction layer. */
 #ifndef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS     4
+#define COAP_MAX_OPEN_TRANSACTIONS     2
 #endif /* COAP_MAX_OPEN_TRANSACTIONS */
 
 /* Maximum number of failed request attempts before action */

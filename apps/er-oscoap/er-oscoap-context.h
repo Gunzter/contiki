@@ -9,6 +9,8 @@
 #include <inttypes.h>
 #include "sha.h"
 #include "lib/memb.h"
+#include "er-coap-conf.h"
+#include "er-coap-constants.h"
 
 //#define CONTEXT_ID_LEN 8
 #define CONTEXT_ID_LEN 5
@@ -36,8 +38,8 @@ struct OscoapSenderContext
   uint8_t*  SenderId;
   uint8_t   SenderIdLen;
   uint64_t  Seq;
-  uint64_t  Token;
   uint8_t   TokenLen;
+  uint8_t   Token[COAP_TOKEN_LEN];
 };
 
 struct OscoapRecipientContext

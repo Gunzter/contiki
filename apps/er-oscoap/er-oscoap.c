@@ -159,7 +159,7 @@ size_t oscoap_external_aad_size(coap_packet_t* coap_pkt ){
 
 void oscoap_increment_sender_seq(OscoapCommonContext* ctx){
     ctx->SenderContext->Seq++; 
-    PRINTF("NEW SENDER SEQ: %u\n", ctx->SenderContext->Seq);
+    PRINTF("NEW SENDER SEQ: %" PRIu64 "\n", ctx->SenderContext->Seq);
    //TODO CHECKS FOR LIMITS
 }
 
@@ -354,6 +354,11 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   if(serialized_size == 0){
     PRINTF("%s\n", coap_error_message);
   }
+
+  /* break this to new function */
+  memset(coap_pkt->context->SenderContext->Token, 0, COAP_TOKEN_LEN);
+  memcpy(coap_pkt->context->SenderContext->Token, coap_pkt->token, coap_pkt->token_len);
+  coap_pkt->context->SenderContext->TokenLen = coap_pkt->token_len;
 
   PRINTF("Serialized size = %d\n", serialized_size);
   PRINTF_HEX(buffer, serialized_size);
