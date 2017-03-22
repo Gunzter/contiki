@@ -42,7 +42,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <inttypes.h>
 #include <sys/types.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -159,27 +159,23 @@ size_t oscoap_external_aad_size(coap_packet_t* coap_pkt ){
 
 void oscoap_increment_sender_seq(OscoapCommonContext* ctx){
     ctx->SenderContext->Seq++; 
-    PRINTF("NEW SENDER SEQ: %" PRIu64 "\n", ctx->SenderContext->Seq);
+    PRINTF("NEW SENDER SEQ: %" PRIu32 "\n", ctx->SenderContext->Seq);
    //TODO CHECKS FOR LIMITS
 }
 
-uint64_t bytes_to_uint64(uint8_t* bytes, size_t len){
-  uint8_t buffer[8];
-  memset(buffer, 0, 8); //function variables are not initializated to anything
-  int offset = 8 - len;
+uint64_t bytes_to_uint32(uint8_t* bytes, size_t len){
+  uint8_t buffer[4];
+  memset(buffer, 0, 4); //function variables are not initializated to anything
+  int offset = 4 - len;
   uint64_t num;
   
   memcpy((uint8_t*)(buffer + offset), bytes, len);
 
   num = 
-      (uint64_t)buffer[0] << 56 |
-      (uint64_t)buffer[1] << 48 |
-      (uint64_t)buffer[2] << 40 |
-      (uint64_t)buffer[3] << 32 |
-      (uint64_t)buffer[4] << 24 |
-      (uint64_t)buffer[5] << 16 |
-      (uint64_t)buffer[6] << 8  |
-      (uint64_t)buffer[7];
+      (uint64_t)buffer[0] << 24 |
+      (uint64_t)buffer[1] << 16 |
+      (uint64_t)buffer[2] << 8  |
+      (uint64_t)buffer[3];
 
   return num;
 }
@@ -187,12 +183,12 @@ uint64_t bytes_to_uint64(uint8_t* bytes, size_t len){
 
 uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encrypt_t *cose){
 
-  uint64_t incomming_seq = bytes_to_uint64(cose->partial_iv, cose->partial_iv_len);
-  printf("SEQ: incomming %" PRIu64 "\n", incomming_seq);
-  printf("SEQ: last %" PRIu64 "\n", ctx->LastSeq);
+  uint64_t incomming_seq = bytes_to_uint32(cose->partial_iv, cose->partial_iv_len);
+  PRINTF("SEQ: incomming %" PRIu32 "\n", incomming_seq);
+  PRINTF("SEQ: last %" PRIu32 "\n", ctx->LastSeq);
   oscoap_printf_hex(cose->partial_iv, cose->partial_iv_len);
    if (ctx->LastSeq >= OSCOAP_SEQ_MAX) {
-            printf("SEQ ERROR: wrapped\n");
+            PRINTF("SEQ ERROR: wrapped\n");
             return OSCOAP_SEQ_WRAPPED;
         }
         ctx->RollbackLastSeq = ctx->LastSeq; //recipient_seq;
@@ -206,20 +202,20 @@ uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encry
             
             
         } else if (incomming_seq == ctx->LastSeq) {
-          printf("SEQ ERROR: replay\n");
+          PRINTF("SEQ ERROR: replay\n");
             return OSCOAP_SEQ_REPLAY;
         } else { //seq < this.recipient_seq
             if (incomming_seq + ctx->ReplayWindowSize < ctx->LastSeq) {
-              printf("SEQ ERROR: old\n");
+              PRINTF("SEQ ERROR: old\n");
               return OSCOAP_SEQ_OLD_MESSAGE;
             }
             // seq+replay_window_size > recipient_seq
             int shift = ctx->LastSeq - incomming_seq;
-            uint64_t pattern = 1 << shift;
-            uint64_t verifier = ctx->SlidingWindow & pattern;
+            uint32_t pattern = 1 << shift;
+            uint32_t verifier = ctx->SlidingWindow & pattern;
             verifier = verifier >> shift;
             if (verifier == 1) {
-              printf("SEQ ERROR: replay\n");
+              PRINTF("SEQ ERROR: replay\n");
                 return OSCOAP_SEQ_REPLAY;
             }
             ctx->SlidingWindow = ctx->SlidingWindow | pattern;
@@ -233,13 +229,7 @@ uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encry
    the Partial IV parameter, received in the COSE Object.   */
 void create_iv(uint8_t* iv, uint8_t* out, uint8_t* seq, int seq_len ){
 //TODO fix usage of magic numbers and add support for longer seq
-	out[0] = iv[0];
-	out[1] = iv[1];
-	out[2] = iv[2];	
-	out[3] = iv[3];
-	out[4] = iv[4];
-	out[5] = iv[5];
-	out[6] = iv[6];
+  memcpy(out, iv, 7);
 	int i = 6;
 	int j = seq_len - 1;
 	while(i > (6-seq_len)){
@@ -383,9 +373,9 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     //PRINTF_HEX(coap_pkt->object_security, coap_pkt->object_security_len);
     OPT_COSE_Decode(&cose, coap_pkt->object_security, coap_pkt->object_security_len);
   }
-  printf("partial iv, key id\n");
-  oscoap_printf_hex(cose.partial_iv, cose.partial_iv_len);
-  oscoap_printf_hex(cose.kid, cose.kid_len);
+  PRINTF("partial iv, key id\n");
+  PRINTF_HEX(cose.partial_iv, cose.partial_iv_len);
+  PRINTF_HEX(cose.kid, cose.kid_len);
 
   	uint8_t nonce[CONTEXT_INIT_VECT_LEN];
 
@@ -411,15 +401,14 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
   	}
 
    
- 
     OPT_COSE_SetAlg(&cose, COSE_Algorithm_AES_CCM_64_64_128);
 
     size_t external_aad_size = oscoap_external_aad_size(coap_pkt); // this is a upper bound of the size
     uint8_t external_aad_buffer[external_aad_size]; 
   
     external_aad_size = oscoap_prepare_external_aad(coap_pkt, &cose, external_aad_buffer, 0);
-    printf("external aad\n");
-    oscoap_printf_hex(external_aad_buffer, external_aad_size);
+    PRINTF("external aad\n");
+    PRINTF_HEX(external_aad_buffer, external_aad_size);
 
     OPT_COSE_SetExternalAAD(&cose, external_aad_buffer, external_aad_size);
            

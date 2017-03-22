@@ -172,7 +172,7 @@ if(oscoap_derrive_ctx(context_id, CONTEXT_ID_LEN, master_secret, 24, 12 , 1,
  */
   
 
-	if(oscoap_new_ctx( cid, sender_key, sender_iv, receiver_key, receiver_iv, sender_id, ID_LEN, receiver_id, ID_LEN, 64) == 0){
+	if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, ID_LEN, receiver_id, ID_LEN, 64) == 0){
   	printf("Error: Could not create new Context!\n");
 	}
 	

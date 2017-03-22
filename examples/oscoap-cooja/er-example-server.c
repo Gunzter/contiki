@@ -105,7 +105,6 @@ extern resource_t res_sht11;
 #endif
 */
 
-uint8_t cid[CONTEXT_ID_LEN] = { 0x4B, 0x65, 0x79, 0x23, 0x30};
 uint8_t receiver_key[] = {0xEB,0x43,0x09,0x8A,0x0F,0x6F,0x7B,0x69,0xCE,0xDF,0x29,0xE0,0x80,0x50,0x95,0x82};
 uint8_t receiver_iv[] = {0x58,0xF9,0x1A,0x5C,0xDF,0xF4,0xF5};
 
@@ -177,7 +176,7 @@ oscoap_ctx_store_init();
 
 //Interop
 
-if(oscoap_new_ctx( cid, sender_key, sender_iv, receiver_key, receiver_iv, sender_id, ID_LEN, receiver_id, ID_LEN, 64) == 0){
+if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, ID_LEN, receiver_id, ID_LEN, 64) == 0){
   printf("Error: Could not create new Context!\n");
 }
 
