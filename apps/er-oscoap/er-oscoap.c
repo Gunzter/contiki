@@ -186,7 +186,7 @@ uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encry
   uint64_t incomming_seq = bytes_to_uint32(cose->partial_iv, cose->partial_iv_len);
   PRINTF("SEQ: incomming %" PRIu32 "\n", incomming_seq);
   PRINTF("SEQ: last %" PRIu32 "\n", ctx->LastSeq);
-  oscoap_printf_hex(cose->partial_iv, cose->partial_iv_len);
+  PRINTF_HEX(cose->partial_iv, cose->partial_iv_len);
    if (ctx->LastSeq >= OSCOAP_SEQ_MAX) {
             PRINTF("SEQ ERROR: wrapped\n");
             return OSCOAP_SEQ_WRAPPED;
@@ -296,9 +296,11 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
 
   OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
   OPT_COSE_SetNonce(&cose, nonce_buffer, CONTEXT_INIT_VECT_LEN);
+  
+  if(coap_is_request(coap_pkt)){ /* KeyID shall not be present in replies */
   OPT_COSE_SetKeyID(&cose, coap_pkt->context->SenderContext->SenderId,
             coap_pkt->context->SenderContext->SenderIdLen);
-
+  }
 
   size_t external_aad_size = oscoap_external_aad_size(coap_pkt); // this is a upper bound of the size
   uint8_t external_aad_buffer[external_aad_size]; 
@@ -380,8 +382,13 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
   	uint8_t nonce[CONTEXT_INIT_VECT_LEN];
 
     OscoapCommonContext* ctx;
-  	ctx = oscoap_find_ctx_by_rid(cose.kid, cose.kid_len);
-  	if(ctx == NULL){	
+    if(coap_is_request(coap_pkt)){  // Find context by KeyID if a request, or Token if receiving a reply
+  	   ctx = oscoap_find_ctx_by_rid(cose.kid, cose.kid_len);
+  	}else {
+       ctx = oscoap_find_ctx_by_token(coap_pkt->token, coap_pkt->token_len);
+    }
+
+    if(ctx == NULL){	
   		  PRINTF("context is not fetched form DB cid: ");
         PRINTF_HEX(cose.kid, cose.kid_len);
         return OSCOAP_CONTEXT_NOT_FOUND;
@@ -801,18 +808,18 @@ void oscoap_printf_hex(unsigned char *data, unsigned int len){
 	int i=0;
 	for(i=0; i<len; i++)
 	{
-		PRINTF("%02x ",data[i]);
+		printf("%02x ",data[i]);
 	}
-	PRINTF("\n");
+	printf("\n");
 }
 
 void oscoap_printf_char(unsigned char *data, unsigned int len){
 	int i=0;
 	for(i=0; i<len; i++)
 	{
-		PRINTF(" %c ",data[i]);
+		printf(" %c ",data[i]);
 	}
-	PRINTF("\n");
+	printf("\n");
 }
 
 #define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"

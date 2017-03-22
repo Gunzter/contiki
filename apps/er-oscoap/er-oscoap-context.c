@@ -235,7 +235,7 @@ OscoapCommonContext* oscoap_find_ctx_by_token(uint8_t* token, uint8_t token_len)
     OscoapCommonContext *ctx_ptr = common_context_store;
     uint8_t cmp_len = MIN(token_len, ctx_ptr->SenderContext->TokenLen);
 
-    while(memcmp(ctx_ptr->SenderContext->SenderId, token, cmp_len) != 0){
+    while(memcmp(ctx_ptr->SenderContext->Token, token, cmp_len) != 0){
      PRINTF("tried:\n");
      PRINTF_HEX(ctx_ptr->SenderContext->Token, ctx_ptr->SenderContext->TokenLen);
       ctx_ptr = ctx_ptr->NextContext;

@@ -473,8 +473,8 @@ coap_status_t coap_parse_message(void *packet, uint8_t *data,
     //Sequence Number has not been received before, the server MUST
     //stop processing the request.
   int OSCOAP = 0;    
-  PRINTF("Parsing incommign message!\n");
-  oscoap_printf_hex(data, data_len);
+  //PRINTF("Parsing incommign message!\n");
+  //oscoap_printf_hex(data, data_len);
 
   coap_packet_t *const coap_pkt = (coap_packet_t *)packet;
 

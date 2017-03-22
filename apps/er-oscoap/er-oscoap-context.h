@@ -12,7 +12,6 @@
 #include "er-coap-conf.h"
 #include "er-coap-constants.h"
 
-//#define CONTEXT_ID_LEN 8
 #define CONTEXT_KEY_LEN 16 
 #define CONTEXT_INIT_VECT_LEN 7
 #define CONTEXT_SEQ_LEN 4 
