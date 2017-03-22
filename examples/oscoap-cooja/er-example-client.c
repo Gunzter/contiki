@@ -97,7 +97,6 @@ client_chunk_handler(void *response)
 }
 
 //Interop
-uint8_t cid[CONTEXT_ID_LEN] = { 0x4B, 0x65, 0x79, 0x23, 0x30};
 uint8_t sender_key[] = {0xEB,0x43,0x09,0x8A,0x0F,0x6F,0x7B,0x69,0xCE,0xDF,0x29,0xE0,0x80,0x50,0x95,0x82};
 uint8_t sender_iv[] = {0x58,0xF9,0x1A,0x5C,0xDF,0xF4,0xF5};
 
@@ -122,7 +121,7 @@ PROCESS_THREAD(er_example_client, ev, data)
   PRINTF("LL header: %u\n", UIP_LLH_LEN);
   PRINTF("IP+UDP header: %u\n", UIP_IPUDPH_LEN);
   PRINTF("REST max chunk: %u\n", REST_MAX_CHUNK_SIZE);
-
+  printf("sizeof(size_t): %d\n", sizeof(size_t));
 #if PLATFORM_HAS_BUTTON
   SENSORS_ACTIVATE(button_sensor);
   printf("Press a button to request %s\n", service_urls[uri_switch]);
@@ -172,7 +171,7 @@ if(oscoap_derrive_ctx(context_id, CONTEXT_ID_LEN, master_secret, 24, 12 , 1,
  */
   
 
-	if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, ID_LEN, receiver_id, ID_LEN, 64) == 0){
+	if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
   	printf("Error: Could not create new Context!\n");
 	}
 	

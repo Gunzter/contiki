@@ -147,7 +147,7 @@ size_t oscoap_external_aad_size(coap_packet_t* coap_pkt ){
    //   ret += coap_get_header_uri_path(coap_pkt, NULL);
       ret += 55; //upper bound ish for IP ADDR
   } else { // Response
-      ret += 8+ID_LEN+CONTEXT_SEQ_LEN; // TID
+      ret += 8+4;
       ret += 7;
   }
 
@@ -307,8 +307,8 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   if(coap_is_request(coap_pkt)){
       oscoap_increment_sender_seq(coap_pkt->context);
   } 
-  printf("external aad \n");
-  oscoap_printf_hex(external_aad_buffer, external_aad_size);
+  PRINTF("external aad \n");
+  PRINTF_HEX(external_aad_buffer, external_aad_size);
 
 
   OPT_COSE_SetExternalAAD(&cose, external_aad_buffer, external_aad_size);
@@ -425,7 +425,7 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
 
     if(OPT_COSE_Decrypt(&cose, ctx->RecipientContext->RecipientKey, CONTEXT_KEY_LEN)){
       roll_back(ctx->RecipientContext);
-      printf("Error: Crypto Error!\n");
+      PRINTF("Error: Crypto Error!\n");
       return OSCOAP_CRYPTO_ERROR;
     }
     ctx->RecipientContext->LastSeq = cose.partial_iv[0];

@@ -176,7 +176,7 @@ oscoap_ctx_store_init();
 
 //Interop
 
-if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, ID_LEN, receiver_id, ID_LEN, 64) == 0){
+if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
   printf("Error: Could not create new Context!\n");
 }
 
