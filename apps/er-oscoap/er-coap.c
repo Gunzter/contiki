@@ -468,10 +468,7 @@ coap_send_message(uip_ipaddr_t *addr, uint16_t port, uint8_t *data,
 //Modified for OSCOAP
 coap_status_t coap_parse_message(void *packet, uint8_t *data,
                                          uint16_t data_len){
-    //Verify the Sequence Number in the Partial IV parameter, as
-    //described in Section 6.1.  If it cannot be verified that the
-    //Sequence Number has not been received before, the server MUST
-    //stop processing the request.
+
   int OSCOAP = 0;    
   //PRINTF("Parsing incommign message!\n");
   //oscoap_printf_hex(data, data_len);
@@ -1301,3 +1298,143 @@ coap_set_payload(void *packet, const void *payload, size_t length)
   return coap_pkt->payload_len;
 }
 /*---------------------------------------------------------------------------*/
+
+/* Original Serialize method */
+size_t
+oscoap_serializer(void *packet, uint8_t *buffer, uint8_t role)
+{
+  coap_packet_t *const coap_pkt = (coap_packet_t *)packet;
+  uint8_t *option;
+  unsigned int current_number = 0;
+
+  /* Initialize */
+  //TODO Fix the buffer issue the SERIALIZE OPTION macros works on the option* pointer
+  //Consider the Integrityprotect and plaintext (oscoap) cases, we might be using different buffers
+  //However, maybe one can use the same buffer to save memory
+  
+  coap_pkt->buffer = buffer;
+
+  if(role == OSCOAP_SERIALIZE_COAP){
+    coap_pkt->version = 1;
+
+    PRINTF("-Serializing MID %u to %p, ", coap_pkt->mid, coap_pkt->buffer);
+
+    /* set header fields */
+    coap_pkt->buffer[0] = 0x00;
+    coap_pkt->buffer[0] |= COAP_HEADER_VERSION_MASK
+      & (coap_pkt->version) << COAP_HEADER_VERSION_POSITION;
+    coap_pkt->buffer[0] |= COAP_HEADER_TYPE_MASK
+      & (coap_pkt->type) << COAP_HEADER_TYPE_POSITION;
+    coap_pkt->buffer[0] |= COAP_HEADER_TOKEN_LEN_MASK
+      & (coap_pkt->token_len) << COAP_HEADER_TOKEN_LEN_POSITION;
+    coap_pkt->buffer[1] = coap_pkt->code;
+    coap_pkt->buffer[2] = (uint8_t)((coap_pkt->mid) >> 8);
+    coap_pkt->buffer[3] = (uint8_t)(coap_pkt->mid);
+  }
+  /* empty packet, dont need to do more stuff */
+  if(!coap_pkt->code) {
+    PRINTF("-Done serializing empty message at %p-\n", coap_pkt->buffer);
+    return 4;
+  }
+
+  if(role == OSCOAP_SERIALIZE_COAP){
+    /* set Token */
+    PRINTF("Token (len %u)", coap_pkt->token_len);
+    option = coap_pkt->buffer + COAP_HEADER_LEN;
+    for(current_number = 0; current_number < coap_pkt->token_len;
+        ++current_number) {
+      PRINTF(" %02X", coap_pkt->token[current_number]);
+      *option = coap_pkt->token[current_number];
+      ++option;
+    }
+    PRINTF("-\n");
+  } else {
+    option  = coap_pkt->buffer;
+  }
+
+  /* Serialize options */
+  current_number = 0;
+
+  PRINTF("-Serializing options at %p-\n", option);
+
+  /* The options must be serialized in the order of their number */
+  COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_IF_MATCH, if_match, "If-Match");
+  if( role == OSCOAP_SERIALIZE_COAP || role == OSCOAP_SERIALIZE_PROTECTED ){
+    COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_URI_HOST, uri_host, '\0',
+                               "Uri-Host");
+  }
+  COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_ETAG, etag, "ETag");
+  COAP_SERIALIZE_INT_OPTION(COAP_OPTION_IF_NONE_MATCH,
+                            content_format -
+                            coap_pkt->
+                            content_format /* hack to get a zero field */,
+                            "If-None-Match");
+  COAP_SERIALIZE_INT_OPTION(COAP_OPTION_OBSERVE, observe, "Observe");
+  if( role == OSCOAP_SERIALIZE_COAP || role == OSCOAP_SERIALIZE_PROTECTED ){
+    COAP_SERIALIZE_INT_OPTION(COAP_OPTION_URI_PORT, uri_port, "Uri-Port");
+  }
+  COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_LOCATION_PATH, location_path, '/',
+                               "Location-Path");
+  if( role == OSCOAP_SERIALIZE_COAP || role == OSCOAP_SERIALIZE_PROTECTED ){
+    COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_URI_PATH, uri_path, '/',
+                               "Uri-Path");
+  }
+  PRINTF("Serialize content format: %d\n", coap_pkt->content_format);
+  COAP_SERIALIZE_INT_OPTION(COAP_OPTION_CONTENT_FORMAT, content_format,
+                            "Content-Format");
+  if( role == OSCOAP_SERIALIZE_COAP || role == OSCOAP_SERIALIZE_OSCOAP ){
+    COAP_SERIALIZE_INT_OPTION(COAP_OPTION_MAX_AGE, max_age, "Max-Age");
+    COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_URI_QUERY, uri_query, '&',
+                               "Uri-Query");
+  }
+  if( role == OSCOAP_SERIALIZE_COAP || role == OSCOAP_SERIALIZE_OSCOAP ){
+    COAP_SERIALIZE_INT_OPTION(COAP_OPTION_ACCEPT, accept, "Accept");
+    COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_LOCATION_QUERY, location_query,
+                               '&', "Location-Query");
+  }
+  if(role == OSCOAP_SERIALIZE_COAP ){
+    COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_OBJECT_SECURITY, object_security, "Object-Security");
+
+    COAP_SERIALIZE_BLOCK_OPTION(COAP_OPTION_BLOCK2, block2, "Block2");
+    COAP_SERIALIZE_BLOCK_OPTION(COAP_OPTION_BLOCK1, block1, "Block1");
+    COAP_SERIALIZE_INT_OPTION(COAP_OPTION_SIZE2, size2, "Size2");
+    COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_PROXY_URI, proxy_uri, '\0',
+                                 "Proxy-Uri");
+    COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_PROXY_SCHEME, proxy_scheme, '\0',
+                                 "Proxy-Scheme");
+    COAP_SERIALIZE_INT_OPTION(COAP_OPTION_SIZE1, size1, "Size1");
+  }
+  PRINTF("-Done serializing at %p----\n", option);
+
+  if( role == OSCOAP_SERIALIZE_COAP || role == OSCOAP_SERIALIZE_OSCOAP){
+    /* Pack payload */
+    if((option - coap_pkt->buffer) <= COAP_MAX_HEADER_SIZE) {
+      /* Payload marker */
+      if(coap_pkt->payload_len) {
+        *option = 0xFF;
+        ++option;
+      }
+      memmove(option, coap_pkt->payload, coap_pkt->payload_len);
+    } else {
+      /* an error occurred: caller must check for !=0 */
+      coap_pkt->buffer = NULL;
+      coap_error_message = "Serialized header exceeds COAP_MAX_HEADER_SIZE";
+      return 0;
+    }
+  } //Do nothing for OSCOAP_SERIALIZE_PROTECTED
+
+  PRINTF("-Done %u B (header len %u, payload len %u)-\n",
+         (unsigned int)(coap_pkt->payload_len + option - buffer),
+         (unsigned int)(option - buffer),
+         (unsigned int)coap_pkt->payload_len);
+
+  PRINTF("Dump [0x%02X %02X %02X %02X  %02X %02X %02X %02X]\n",
+         coap_pkt->buffer[0],
+         coap_pkt->buffer[1],
+         coap_pkt->buffer[2],
+         coap_pkt->buffer[3],
+         coap_pkt->buffer[4],
+         coap_pkt->buffer[5], coap_pkt->buffer[6], coap_pkt->buffer[7]
+         );
+  return (option - buffer) + coap_pkt->payload_len; /* packet length */
+}
