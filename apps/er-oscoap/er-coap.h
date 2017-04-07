@@ -293,6 +293,11 @@ void coap_merge_multi_option(char **dst, size_t *dst_len, uint8_t *option, size_
 uint16_t coap_log_2(uint16_t value);
 uint32_t coap_parse_int_option(uint8_t *bytes, size_t length);
 
+#define ROLE_COAP         1
+#define ROLE_CONFIDENTIAL 2
+#define ROLE_PROTECTED    3
 
+size_t oscoap_serializer(void *packet, uint8_t *buffer, uint8_t role);
+coap_status_t oscoap_parser(void *packet, uint8_t *data, uint16_t data_len, uint8_t role);
 
 #endif /* ER_COAP_H_ */

@@ -46,6 +46,7 @@ struct OscoapRecipientContext
   uint8_t*  RecipientId;
   uint8_t   RecipientIdLen;
   uint8_t   ReplayWindowSize;
+  uint8_t   InitialState;
 };
 
 struct OscoapCommonContext{

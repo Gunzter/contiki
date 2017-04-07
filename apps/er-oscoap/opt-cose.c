@@ -35,7 +35,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include "er-oscoap.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -50,7 +50,7 @@ size_t  OPT_COSE_Encode(opt_cose_encrypt_t *cose, uint8_t *buffer){
 	ret += OPT_CBOR_put_array(&buffer, 3);
 	ret += OPT_COSE_Encode_Protected(cose, &buffer);
 	ret += OPT_CBOR_put_map(&buffer, 0);
-	PRINTF("ciphertext len dec: %d hex: %02x\n", cose->ciphertext_len, cose->ciphertext_len);
+//	PRINTF("ciphertext len dec: %d hex: %02x\n", cose->ciphertext_len, cose->ciphertext_len);
 	ret += OPT_CBOR_put_bytes(&buffer, cose->ciphertext_len, cose->ciphertext);
 
 	return ret;
@@ -190,9 +190,9 @@ uint8_t OPT_COSE_Build_AAD(opt_cose_encrypt_t *cose, uint8_t *buffer){
 
 size_t  OPT_COSE_AAD_length(opt_cose_encrypt_t *cose){
 	//TODO this only works for responses
-	PRINTF("cose->partial_iv_len %d\n", cose->partial_iv_len);
-	PRINTF("cose->external_aad_len %d\n", cose->external_aad_len);
-	PRINTF("cose->kid_len %d\n", cose->kid_len);
+//	PRINTF("cose->partial_iv_len %d\n", cose->partial_iv_len);
+//	PRINTF("cose->external_aad_len %d\n", cose->external_aad_len);
+//	PRINTF("cose->kid_len %d\n", cose->kid_len);
 	size_t ret = 12 + 3 + cose->partial_iv_len + 1 + cose->external_aad_len;
 	//array + text(Encrypted) + bytes + seq_len + bytes + external_aad_len
 	if(cose->kid_len > 0){
@@ -203,7 +203,7 @@ size_t  OPT_COSE_AAD_length(opt_cose_encrypt_t *cose){
 		ret += cose->sid_len;
 		ret += 2; // one byte key one byte byte-tag
 	}
-	PRINTF("COSE AAD len %d\n", ret);
+//	PRINTF("COSE AAD len %d\n", ret);
 	return ret;
 }
 
@@ -249,12 +249,12 @@ uint8_t _OPT_COSE_cbor_protected_map(opt_cose_encrypt_t *cose, uint8_t *buffer, 
 			buffer++;
 		}
 	}
-	PRINTF("KID: len = %d\n", cose->kid_len);
-	PRINTF_HEX(cose->kid, cose->kid_len);
-	PRINTF("Header Partial IV: len = %d\n", cose->partial_iv_len);
-	PRINTF_HEX(cose->partial_iv, cose->partial_iv_len);
-	PRINTF("Sender ID, len = %d\n", cose->sid_len);
-	PRINTF_HEX(cose->sid, cose->sid_len);
+//	PRINTF("KID: len = %d\n", cose->kid_len);
+//	PRINTF_HEX(cose->kid, cose->kid_len);
+//	PRINTF("Header Partial IV: len = %d\n", cose->partial_iv_len);
+//	PRINTF_HEX(cose->partial_iv, cose->partial_iv_len);
+//	PRINTF("Sender ID, len = %d\n", cose->sid_len);
+//	PRINTF_HEX(cose->sid, cose->sid_len);
 	return 1;
 }
 uint8_t _OPT_COSE_cbor_content(opt_cose_encrypt_t *cose, uint8_t *buffer, uint8_t len){
@@ -269,15 +269,15 @@ uint8_t _OPT_COSE_cbor_bytes(opt_cose_encrypt_t *cose, uint8_t *buffer, uint8_t 
 	}else if(bytefield == 1){
 		return _OPT_COSE_cbor_content(cose, buffer, len);
 	}else{
-		PRINTF("ERROR Unexpected bytefield %d\n", bytefield);
+//		PRINTF("ERROR Unexpected bytefield %d\n", bytefield);
 		return 0;
 	}
 }
 
 //TODO unify buffer len and len in this and the map function
 size_t OPT_COSE_Decode(opt_cose_encrypt_t *cose, uint8_t *buffer, size_t buffer_len){
-	PRINTF("Decoding COSE:\n");
-	PRINTF_HEX(buffer, buffer_len);
+//	PRINTF("Decoding COSE:\n");
+//	PRINTF_HEX(buffer, buffer_len);
 
 	uint8_t bytefield = 0;
 	uint8_t *end_ptr = (uint8_t*)(buffer + buffer_len);
@@ -309,7 +309,7 @@ size_t OPT_COSE_Decode(opt_cose_encrypt_t *cose, uint8_t *buffer, size_t buffer_
 					buffer++;
 					len = *buffer;
 					buffer++;
-					PRINTF("EXTRA bytes len %d\n", len);
+//					PRINTF("EXTRA bytes len %d\n", len);
 				}else{
 					len = (~(0x40) & *buffer);
 					buffer++; //step by length
@@ -324,7 +324,7 @@ size_t OPT_COSE_Decode(opt_cose_encrypt_t *cose, uint8_t *buffer, size_t buffer_
 				buffer++;
 				break;
 			default:
-				PRINTF("Error deafault %02x\n", *buffer);
+//				PRINTF("Error deafault %02x\n", *buffer);
 				buffer++;
 			
 		}

@@ -1,10 +1,12 @@
 all: er-example-server er-example-client 
 # use target "er-plugtest-server" explicitly when requried 
 
+unittest: native-unit-test
+
 CONTIKI=../..
 
 
-CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
+CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\" #-save-temps
 
 # automatically build RESTful resources
 REST_RESOURCES_DIR = ./resources

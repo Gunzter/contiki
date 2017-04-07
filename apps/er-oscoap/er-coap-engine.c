@@ -89,8 +89,9 @@ coap_receive(void)
     PRINTF(":%u\n  Length: %u\n", uip_ntohs(UIP_UDP_BUF->srcport),
            uip_datalen());
 
-    erbium_status_code =
-      coap_parse_message(message, uip_appdata, uip_datalen());
+    //erbium_status_code =
+    //  coap_parse_message(message, uip_appdata, uip_datalen());
+    erbium_status_code = oscoap_parser(message, uip_appdata, uip_datalen(), ROLE_COAP);
     
     if(erbium_status_code == NO_ERROR) {
       /*TODO duplicates suppression, if required by application */

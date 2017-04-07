@@ -42,7 +42,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <inttypes.h>
 #include <sys/types.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -190,36 +190,45 @@ uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encry
    if (ctx->LastSeq >= OSCOAP_SEQ_MAX) {
             PRINTF("SEQ ERROR: wrapped\n");
             return OSCOAP_SEQ_WRAPPED;
-        }
-        ctx->RollbackLastSeq = ctx->LastSeq; //recipient_seq;
-        ctx->RollbackSlidingWindow = ctx->SlidingWindow;
+   }
+  
+  ctx->RollbackLastSeq = ctx->LastSeq; //recipient_seq;
+  ctx->RollbackSlidingWindow = ctx->SlidingWindow;
 
-        if (incomming_seq > ctx->LastSeq) {
-            //Update the replay window
-            int shift = incomming_seq - ctx->LastSeq;
-            ctx->SlidingWindow = ctx->SlidingWindow << shift;
-            ctx->LastSeq = incomming_seq;
+  if (incomming_seq > ctx->LastSeq) {
+     //Update the replay window
+     int shift = incomming_seq - ctx->LastSeq;
+     ctx->SlidingWindow = ctx->SlidingWindow << shift;
+     ctx->LastSeq = incomming_seq;
             
             
-        } else if (incomming_seq == ctx->LastSeq) {
-          PRINTF("SEQ ERROR: replay\n");
-            return OSCOAP_SEQ_REPLAY;
-        } else { //seq < this.recipient_seq
-            if (incomming_seq + ctx->ReplayWindowSize < ctx->LastSeq) {
-              PRINTF("SEQ ERROR: old\n");
-              return OSCOAP_SEQ_OLD_MESSAGE;
-            }
-            // seq+replay_window_size > recipient_seq
-            int shift = ctx->LastSeq - incomming_seq;
-            uint32_t pattern = 1 << shift;
-            uint32_t verifier = ctx->SlidingWindow & pattern;
-            verifier = verifier >> shift;
-            if (verifier == 1) {
-              PRINTF("SEQ ERROR: replay\n");
-                return OSCOAP_SEQ_REPLAY;
-            }
-            ctx->SlidingWindow = ctx->SlidingWindow | pattern;
-        }
+  } else if (incomming_seq == ctx->LastSeq) {
+     // Special case since we do not use unisgned int for seq
+     if(ctx->InitialState == 1 && incomming_seq == 0){
+        ctx->InitialState = 0;
+        int shift = incomming_seq - ctx->LastSeq;
+        ctx->SlidingWindow = ctx->SlidingWindow << shift;
+        ctx->LastSeq = incomming_seq;
+     } else {
+        PRINTF("SEQ ERROR: replay\n");
+        return OSCOAP_SEQ_REPLAY;
+     }
+  } else { //seq < this.recipient_seq
+     if (incomming_seq + ctx->ReplayWindowSize < ctx->LastSeq) {
+        PRINTF("SEQ ERROR: old\n");
+        return OSCOAP_SEQ_OLD_MESSAGE;
+     }
+     // seq+replay_window_size > recipient_seq
+     int shift = ctx->LastSeq - incomming_seq;
+     uint32_t pattern = 1 << shift;
+     uint32_t verifier = ctx->SlidingWindow & pattern;
+     verifier = verifier >> shift;
+     if (verifier == 1) {
+        PRINTF("SEQ ERROR: replay\n");
+        return OSCOAP_SEQ_REPLAY;
+     }
+     ctx->SlidingWindow = ctx->SlidingWindow | pattern;
+  }
   
   return 0;
 
@@ -241,7 +250,6 @@ void create_iv(uint8_t* iv, uint8_t* out, uint8_t* seq, int seq_len ){
 }
 
 
-
 void roll_back(OscoapRecipientContext* ctx) {
   if (ctx->RollbackSlidingWindow != 0) {
       ctx->SlidingWindow =  ctx->RollbackSlidingWindow; 
@@ -253,8 +261,6 @@ void roll_back(OscoapRecipientContext* ctx) {
   }
 
 }
-
-
 
 
 
@@ -276,8 +282,10 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   memset(plaintext_buffer, 0, 50);
     
   //Serialize options and payload
-  size_t plaintext_size =  oscoap_prepare_plaintext( packet, plaintext_buffer);
- 
+  //size_t plaintext_size =  oscoap_prepare_plaintext( packet, plaintext_buffer);
+  size_t plaintext_size = oscoap_serializer(packet, plaintext_buffer, ROLE_CONFIDENTIAL);
+  printf("plaintext:\n");
+  oscoap_printf_hex(plaintext_buffer, plaintext_size);
   OPT_COSE_SetContent(&cose, plaintext_buffer, plaintext_size);
   OPT_COSE_SetAlg(&cose, COSE_Algorithm_AES_CCM_64_64_128);
 
@@ -342,7 +350,13 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   
   coap_set_header_max_age(packet, 0);
   clear_options(coap_pkt);
-  size_t serialized_size = coap_serialize_message_coap(packet, buffer);
+  //size_t serialized_size = coap_serialize_message_coap(packet, buffer);
+
+ // uint8_t buffer2[70];
+  size_t serialized_size = oscoap_serializer(packet, buffer, ROLE_COAP);
+ // printf("NEW SERIALIZER len %d\n", s2);
+ // oscoap_printf_hex(buffer2, s2);
+
   if(serialized_size == 0){
     PRINTF("%s\n", coap_error_message);
   }
@@ -389,7 +403,7 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     }
 
     if(ctx == NULL){	
-  		  PRINTF("context is not fetched form DB cid: ");
+  		  PRINTF("context is not fetched form DB kid: ");
         PRINTF_HEX(cose.kid, cose.kid_len);
         return OSCOAP_CONTEXT_NOT_FOUND;
   	}else{
@@ -447,7 +461,8 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     //TODO, rädda PROXY URI; MAX AGE osv. från memset i restore_packet
     PRINTF("buffer before restore pkt\n");
     PRINTF_HEX(coap_pkt->buffer, 50);
-    oscoap_restore_packet(coap_pkt);
+   // oscoap_restore_packet(coap_pkt);
+    oscoap_parser(coap_pkt, coap_pkt->object_security, coap_pkt->object_security_len, ROLE_CONFIDENTIAL);
     PRINTF("buffer after restore pkt\n");
     PRINTF_HEX(coap_pkt->buffer, 50);
 
@@ -496,21 +511,21 @@ int coap_get_header_object_security(void* packet, const uint8_t** os_opt){
     }
     return 0;
 }
-
+/*
 size_t oscoap_prepare_plaintext(void* packet, uint8_t* plaintext_buffer){
  PRINTF("prepare plaintext\n");  
   coap_packet_t *const coap_pkt = (coap_packet_t *)packet;
   uint8_t *option;
   unsigned int current_number = 0;
 
-  /* Initialize */
+  // Initialize 
   uint8_t* original_buffer = coap_pkt->buffer;
   coap_pkt->buffer = plaintext_buffer;
 
   PRINTF("-Serializing MID %u to %p, ", coap_pkt->mid, coap_pkt->buffer);
 
   //TODO is this correct?
-  /* empty packet, dont need to do more stuff */
+  // empty packet, dont need to do more stuff 
   if(!coap_pkt->code) {
     PRINTF("-Done serializing empty message at %p-\n", coap_pkt->buffer);
     coap_pkt->buffer = original_buffer;
@@ -530,11 +545,11 @@ size_t oscoap_prepare_plaintext(void* packet, uint8_t* plaintext_buffer){
 
   current_number = 0;
   option = coap_pkt->buffer;
-  /* Serialize options */
+  // Serialize options 
 
   PRINTF("-Serializing options at %p-\n", option);
 
-  /* The options must be serialized in the order of their number */
+  // The options must be serialized in the order of their number 
   COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_IF_MATCH, if_match, "If-Match");
   //COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_URI_HOST, uri_host, '\0', 
   //                             "Uri-Host"); //Should be omitted
@@ -542,7 +557,7 @@ size_t oscoap_prepare_plaintext(void* packet, uint8_t* plaintext_buffer){
   COAP_SERIALIZE_INT_OPTION(COAP_OPTION_IF_NONE_MATCH,
                             content_format -
                             coap_pkt->
-                            content_format /* hack to get a zero field */,
+                            content_format ,
                             "If-None-Match");
   COAP_SERIALIZE_INT_OPTION(COAP_OPTION_OBSERVE, observe, "Observe");
  // COAP_SERIALIZE_INT_OPTION(COAP_OPTION_URI_PORT, uri_port, "Uri-Port");
@@ -569,31 +584,31 @@ size_t oscoap_prepare_plaintext(void* packet, uint8_t* plaintext_buffer){
 
   PRINTF("-Done serializing at %p----\n", option);
 
-  /* Pack payload */
+  // Pack payload 
   if((option - coap_pkt->buffer) <= COAP_MAX_HEADER_SIZE) {
-    /* Payload marker */
+    // Payload marker 
     if(coap_pkt->payload_len) {
       *option = 0xFF;
       ++option;
     }
     memmove(option, coap_pkt->payload, coap_pkt->payload_len);
   } else {
-    /* an error occurred: caller must check for !=0 */
+    // an error occurred: caller must check for !=0 
     coap_pkt->buffer = NULL;
     coap_error_message = "Serialized header exceeds COAP_MAX_HEADER_SIZE";
     return 0;
   }
 
   coap_pkt->buffer = original_buffer;
-  return (option - plaintext_buffer) + coap_pkt->payload_len; /* packet length */
-}
-
+  return (option - plaintext_buffer) + coap_pkt->payload_len; // packet length 
+} */
+/*
 void oscoap_restore_packet(void* packet){
  
   coap_packet_t* coap_pkt = (coap_packet_t*) packet;
   uint8_t *data =  coap_pkt->object_security;
   uint8_t *current_option = data;
-  /* parse options */
+  // parse options 
   memset(coap_pkt->options, 0, sizeof(coap_pkt->options));
 
   size_t data_len = coap_pkt->object_security_len;
@@ -602,15 +617,15 @@ void oscoap_restore_packet(void* packet){
   size_t option_length = 0;
  
   while(current_option < data + data_len) {
-    /* payload marker 0xFF, currently only checking for 0xF* because rest is reserved */
+    // payload marker 0xFF, currently only checking for 0xF* because rest is reserved 
     if((current_option[0] & 0xF0) == 0xF0) {
       coap_pkt->payload = ++current_option;
       coap_pkt->payload_len = data_len - (coap_pkt->payload - data);
 
-      /* also for receiving, the Erbium upper bound is REST_MAX_CHUNK_SIZE */
+      // also for receiving, the Erbium upper bound is REST_MAX_CHUNK_SIZE 
       if(coap_pkt->payload_len > REST_MAX_CHUNK_SIZE) {
         coap_pkt->payload_len = REST_MAX_CHUNK_SIZE;
-        /* null-terminate payload */
+        // null-terminate payload 
       }
       coap_pkt->payload[coap_pkt->payload_len] = '\0';
 
@@ -666,14 +681,14 @@ void oscoap_restore_packet(void* packet){
              coap_pkt->etag_len, coap_pkt->etag[0], coap_pkt->etag[1],
              coap_pkt->etag[2], coap_pkt->etag[3], coap_pkt->etag[4],
              coap_pkt->etag[5], coap_pkt->etag[6], coap_pkt->etag[7]
-             );                 /*FIXME always prints 8 bytes */
+             );                 //FIXME always prints 8 bytes 
       break;
     case COAP_OPTION_ACCEPT:
       coap_pkt->accept = coap_parse_int_option(current_option, option_length);
       PRINTF("Accept [%u]\n", coap_pkt->accept);
       break;
     case COAP_OPTION_IF_MATCH:
-      /* TODO support multiple ETags */
+      // TODO support multiple ETags 
       coap_pkt->if_match_len = MIN(COAP_ETAG_LEN, option_length);
       memcpy(coap_pkt->if_match, current_option, coap_pkt->if_match_len);
       PRINTF("If-Match %u [0x%02X%02X%02X%02X%02X%02X%02X%02X]\n",
@@ -682,7 +697,7 @@ void oscoap_restore_packet(void* packet){
              coap_pkt->if_match[3], coap_pkt->if_match[4],
              coap_pkt->if_match[5], coap_pkt->if_match[6],
              coap_pkt->if_match[7]
-             ); /* FIXME always prints 8 bytes */
+             ); // FIXME always prints 8 bytes 
       break;
     case COAP_OPTION_IF_NONE_MATCH:
       coap_pkt->if_none_match = 1;
@@ -722,14 +737,14 @@ void oscoap_restore_packet(void* packet){
       PRINTF("Uri-Port [%u]\n", coap_pkt->uri_port);
       break;
     case COAP_OPTION_URI_PATH:
-      /* coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string */
+      // coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string 
       coap_merge_multi_option((char **)&(coap_pkt->uri_path),
                               &(coap_pkt->uri_path_len), current_option,
                               option_length, '/');
       PRINTF("Uri-Path [%.*s]\n", (int)coap_pkt->uri_path_len, coap_pkt->uri_path);
       break;
     case COAP_OPTION_URI_QUERY:
-      /* coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string */
+      // coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string 
       coap_merge_multi_option((char **)&(coap_pkt->uri_query),
                               &(coap_pkt->uri_query_len), current_option,
                               option_length, '&');
@@ -738,7 +753,7 @@ void oscoap_restore_packet(void* packet){
       break;
 
     case COAP_OPTION_LOCATION_PATH:
-      /* coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string */
+      // coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string 
       coap_merge_multi_option((char **)&(coap_pkt->location_path),
                               &(coap_pkt->location_path_len), current_option,
                               option_length, '/');
@@ -746,7 +761,7 @@ void oscoap_restore_packet(void* packet){
              coap_pkt->location_path);
       break;
     case COAP_OPTION_LOCATION_QUERY:
-      /* coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string */
+      // coap_merge_multi_option() operates in-place on the IPBUF, but final packet field should be const string -> cast to string 
       coap_merge_multi_option((char **)&(coap_pkt->location_query),
                               &(coap_pkt->location_query_len), current_option,
                               option_length, '&');
@@ -793,7 +808,7 @@ void oscoap_restore_packet(void* packet){
       break;
     default:
       PRINTF("unknown (%u)\n", option_number);
-/* check if critical (odd) */
+// check if critical (odd) 
       
       if(option_number & 1) {
         coap_error_message = "Unsupported critical option";
@@ -803,6 +818,8 @@ void oscoap_restore_packet(void* packet){
     current_option += option_length;  
   }
 }
+*/ 
+
 /* Below is debug functions */
 void oscoap_printf_hex(unsigned char *data, unsigned int len){
 	int i=0;

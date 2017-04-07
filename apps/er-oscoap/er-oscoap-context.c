@@ -134,6 +134,7 @@ OscoapCommonContext* oscoap_derrive_ctx(uint8_t* master_secret,uint8_t master_se
     recipient_ctx->RollbackLastSeq = 0;
     recipient_ctx->SlidingWindow = 0;
     recipient_ctx->RollbackSlidingWindow = 0;
+    recipient_ctx->InitialState = 1;
    
 
     common_ctx->NextContext = common_context_store;
@@ -179,6 +180,7 @@ OscoapCommonContext* oscoap_new_ctx( uint8_t* sw_k, uint8_t* sw_iv, uint8_t* rw_
     recipient_ctx->RollbackLastSeq = 0;
     recipient_ctx->SlidingWindow = 0;
     recipient_ctx->RollbackSlidingWindow = 0;
+    recipient_ctx->InitialState = 1;
 
     common_ctx->NextContext = common_context_store;
     common_context_store = common_ctx;
@@ -217,10 +219,11 @@ OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, uint8_t rid_len){
     PRINTF("tried:\n");
     PRINTF_HEX(ctx_ptr->RecipientContext->RecipientId, ctx_ptr->RecipientContext->RecipientIdLen);
       ctx_ptr = ctx_ptr->NextContext;
-      cmp_len = MIN(rid_len, ctx_ptr->RecipientContext->RecipientIdLen);
+      
       if(ctx_ptr == NULL){
         return NULL;
       }
+      cmp_len = MIN(rid_len, ctx_ptr->RecipientContext->RecipientIdLen);
     }
     return ctx_ptr;
 }
@@ -239,10 +242,11 @@ OscoapCommonContext* oscoap_find_ctx_by_token(uint8_t* token, uint8_t token_len)
      PRINTF("tried:\n");
      PRINTF_HEX(ctx_ptr->SenderContext->Token, ctx_ptr->SenderContext->TokenLen);
       ctx_ptr = ctx_ptr->NextContext;
-      cmp_len = MIN(token_len, ctx_ptr->SenderContext->TokenLen);
+      
       if(ctx_ptr == NULL){
         return NULL;
       }
+      cmp_len = MIN(token_len, ctx_ptr->SenderContext->TokenLen);
     }
     return ctx_ptr;
 }
