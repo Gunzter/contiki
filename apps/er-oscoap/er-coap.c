@@ -324,10 +324,12 @@ coap_serialize_message(void *packet, uint8_t *buffer){
   coap_packet_t *const coap_pkt = (coap_packet_t *)packet; 
 
     if(IS_OPTION(coap_pkt, COAP_OPTION_OBJECT_SECURITY)){ 
-     	PRINTF("sending OSCOAP\n");
-	    return oscoap_prepare_message(packet, buffer);
+     	printf("sending OSCOAP\n");
+	    size_t s = oscoap_prepare_message(packet, buffer);
+      oscoap_printf_hex(buffer, s);
+      return s;
     }else{
-	     PRINTF("sending COAP\n");
+	     printf("sending COAP\n");
 	    // return coap_serialize_message_coap(packet, buffer); 
        return oscoap_serializer(packet, buffer, ROLE_COAP);
     }
@@ -407,6 +409,7 @@ coap_serialize_message_coap(void *packet, uint8_t *buffer)
   COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_LOCATION_QUERY, location_query,
                                '&', "Location-Query");
   COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_OBJECT_SECURITY, object_security, "Object-Security");
+
   COAP_SERIALIZE_BLOCK_OPTION(COAP_OPTION_BLOCK2, block2, "Block2");
   COAP_SERIALIZE_BLOCK_OPTION(COAP_OPTION_BLOCK1, block1, "Block1");
   COAP_SERIALIZE_INT_OPTION(COAP_OPTION_SIZE2, size2, "Size2");
@@ -1405,6 +1408,8 @@ oscoap_serializer(void *packet, uint8_t *buffer, uint8_t role)
     COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_PROXY_SCHEME, proxy_scheme, '\0',
                                  "Proxy-Scheme");
     COAP_SERIALIZE_INT_OPTION(COAP_OPTION_SIZE1, size1, "Size1");
+  //  COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_OBJECT_SECURITY, object_security, "Object-Security");
+
   }
   PRINTF("-Done serializing at %p----\n", option);
 
@@ -1452,6 +1457,7 @@ coap_status_t oscoap_parser(void *packet, uint8_t *data,
   coap_packet_t *const coap_pkt = (coap_packet_t *)packet;
  
   if(role == ROLE_COAP){
+    oscoap_printf_hex(data, data_len);
     // initialize packet 
  //   PRINTF("ROLE COAP\n");
     memset(coap_pkt, 0, sizeof(coap_packet_t));

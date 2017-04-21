@@ -6,7 +6,11 @@ unittest: native-unit-test
 CONTIKI=../..
 
 
-CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\" #-save-temps
+CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\" 
+#For saving .s and .o files
+#CFLAGS += -save-temps
+#For that extra special touch :) 
+#CFLAGS += -Wall -Wextra
 
 # automatically build RESTful resources
 REST_RESOURCES_DIR = ./resources

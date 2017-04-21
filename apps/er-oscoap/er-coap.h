@@ -98,6 +98,7 @@
       uint8_t token_len;
       uint8_t token[COAP_TOKEN_LEN];
 
+
       uint8_t options[COAP_OPTION_SIZE1 / OPTION_MAP_SIZE + 1]; /* bitmap to check if option is set */
 
       uint16_t content_format; /* parse options once and store; allows setting options in random order  */

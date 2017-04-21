@@ -99,7 +99,7 @@ external_aad = [
 size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* cose, uint8_t* buffer, uint8_t sending){
   uint8_t ret = 0;
   uint8_t seq_buffer[8];
-  ret += OPT_CBOR_put_array(&buffer, 5);
+  ret += OPT_CBOR_put_array(&buffer, 6);
   ret += OPT_CBOR_put_unsigned(&buffer, 1); //version is always 1
   ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->code)); //COAP code is one byte //TODO should be
   ret += OPT_CBOR_put_bytes(&buffer, 0, NULL); //Options go here
@@ -209,6 +209,7 @@ uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encry
         int shift = incomming_seq - ctx->LastSeq;
         ctx->SlidingWindow = ctx->SlidingWindow << shift;
         ctx->LastSeq = incomming_seq;
+        
      } else {
         PRINTF("SEQ ERROR: replay\n");
         return OSCOAP_SEQ_REPLAY;
@@ -229,7 +230,7 @@ uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encry
      }
      ctx->SlidingWindow = ctx->SlidingWindow | pattern;
   }
-  
+
   return 0;
 
 }
@@ -297,17 +298,21 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   if(coap_is_request(coap_pkt)){
     seq_bytes_len = to_bytes(coap_pkt->context->SenderContext->Seq, seq_buffer);
   } else {
+    printf("last seq %" PRIu32 "\n", coap_pkt->context->RecipientContext->LastSeq);
     seq_bytes_len = to_bytes(coap_pkt->context->RecipientContext->LastSeq, seq_buffer);
   }
-
+  printf("seq + context iv\n");
+  oscoap_printf_hex(seq_buffer, seq_bytes_len);
+  oscoap_printf_hex(coap_pkt->context->SenderContext->SenderIv, 7);
   create_iv((uint8_t*)coap_pkt->context->SenderContext->SenderIv, nonce_buffer, seq_buffer, seq_bytes_len);
 
-  OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
+  
   OPT_COSE_SetNonce(&cose, nonce_buffer, CONTEXT_INIT_VECT_LEN);
   
   if(coap_is_request(coap_pkt)){ /* KeyID shall not be present in replies */
-  OPT_COSE_SetKeyID(&cose, coap_pkt->context->SenderContext->SenderId,
+    OPT_COSE_SetKeyID(&cose, coap_pkt->context->SenderContext->SenderId,
             coap_pkt->context->SenderContext->SenderIdLen);
+    OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
   }
 
   size_t external_aad_size = oscoap_external_aad_size(coap_pkt); // this is a upper bound of the size
@@ -315,6 +320,7 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   
   external_aad_size = oscoap_prepare_external_aad(coap_pkt, &cose, external_aad_buffer, 1);
   if(coap_is_request(coap_pkt)){
+      set_seq_from_token(coap_pkt->token, coap_pkt->token_len, coap_pkt->context->SenderContext->Seq);
       oscoap_increment_sender_seq(coap_pkt->context);
   } 
   PRINTF("external aad \n");
@@ -337,14 +343,21 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
 
   OPT_COSE_Encrypt(&cose, coap_pkt->context->SenderContext->SenderKey, CONTEXT_KEY_LEN);
   
+  //Here we need to fix stuff with compression and without
   size_t serialized_len = OPT_COSE_Encoded_length(&cose);
 
   uint8_t opt_buffer[serialized_len];
-  OPT_COSE_Encode(&cose, opt_buffer);
+  
+  //OPT_COSE_Encode(&cose, opt_buffer);
+  if(!coap_is_request(coap_pkt)){
+    OPT_COSE_SetPartialIV(&cose, NULL, 0);
+    OPT_COSE_SetKeyID(&cose, NULL, 0);
+  }
+  serialized_len = cose_compress(&cose, opt_buffer);
  
   if(coap_pkt->payload_len > 0){
       	coap_set_object_security_payload(coap_pkt, opt_buffer, serialized_len);	
-  }else{
+  } else {
         coap_set_header_object_security_content(packet, opt_buffer, serialized_len);     
   }
   
@@ -352,7 +365,6 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   clear_options(coap_pkt);
   //size_t serialized_size = coap_serialize_message_coap(packet, buffer);
 
- // uint8_t buffer2[70];
   size_t serialized_size = oscoap_serializer(packet, buffer, ROLE_COAP);
  // printf("NEW SERIALIZER len %d\n", s2);
  // oscoap_printf_hex(buffer2, s2);
@@ -374,7 +386,7 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
 
 
 coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
-       
+  uint8_t seq_buffer[CONTEXT_SEQ_LEN];
   opt_cose_encrypt_t cose;
   OPT_COSE_Init(&cose);
 
@@ -382,12 +394,14 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     PRINTF("DECODE COSE IN PAYLOAD\n");
     //PRINTF("serialized incomming COSE\n");
     //PRINTF_HEX(coap_pkt->payload, coap_pkt->payload_len);
-    OPT_COSE_Decode(&cose, coap_pkt->payload, coap_pkt->payload_len);
+   // OPT_COSE_Decode(&cose, coap_pkt->payload, coap_pkt->payload_len);
+    cose_decompress(&cose, coap_pkt->payload, coap_pkt->payload_len);
   }else{
     PRINTF("DECODE COSE IN OPTION\n");
     //PRINTF("serialized incomming COSE\n");
     //PRINTF_HEX(coap_pkt->object_security, coap_pkt->object_security_len);
-    OPT_COSE_Decode(&cose, coap_pkt->object_security, coap_pkt->object_security_len);
+ //   OPT_COSE_Decode(&cose, coap_pkt->object_security, coap_pkt->object_security_len);
+    cose_decompress(&cose, coap_pkt->object_security, coap_pkt->object_security_len);
   }
   PRINTF("partial iv, key id\n");
   PRINTF_HEX(cose.partial_iv, cose.partial_iv_len);
@@ -407,15 +421,27 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
         PRINTF_HEX(cose.kid, cose.kid_len);
         return OSCOAP_CONTEXT_NOT_FOUND;
   	}else{
-         uint8_t seq_result = oscoap_validate_receiver_seq(ctx->RecipientContext, &cose);
-        if(seq_result != 0){
-          PRINTF("SEQ Error!\n");
-          return seq_result; 
-        }
-
         size_t seq_len;
-        uint8_t *seq = OPT_COSE_GetPartialIV(&cose, &seq_len);
+        uint8_t *seq;
 
+
+        if(coap_is_request(coap_pkt)){  //TODO add check to se that we do not have observe to
+          uint8_t seq_result = oscoap_validate_receiver_seq(ctx->RecipientContext, &cose);
+          if(seq_result != 0){
+            PRINTF("SEQ Error!\n");
+            return seq_result; 
+          }
+          seq = OPT_COSE_GetPartialIV(&cose, &seq_len);
+        } else { //Reply
+          uint32_t sequence_numer = get_seq_from_token(coap_pkt->token, coap_pkt->token_len);
+          printf("retreived seq %" PRIu32 "\n from token: ", sequence_numer);
+          oscoap_printf_hex(coap_pkt->token, coap_pkt->token_len);
+          seq_len = to_bytes(sequence_numer, seq_buffer);
+          seq = seq_buffer;
+          printf("seq bytes\n");
+          oscoap_printf_hex(seq, seq_len);
+          OPT_COSE_SetPartialIV(&cose, seq, seq_len);
+        }
     	  create_iv((uint8_t*)ctx->RecipientContext->RecipientIv, nonce,seq, seq_len);
     		coap_pkt->context = ctx;
     		OPT_COSE_SetNonce(&cose, nonce, CONTEXT_INIT_VECT_LEN); 
@@ -449,7 +475,6 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
       PRINTF("Error: Crypto Error!\n");
       return OSCOAP_CRYPTO_ERROR;
     }
-    ctx->RecipientContext->LastSeq = cose.partial_iv[0];
 
     PRINTF("PLAINTEXT DECRYPTED len %d\n", cose.plaintext_len);
     PRINTF_HEX(cose.plaintext, cose.plaintext_len);
@@ -465,7 +490,7 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     oscoap_parser(coap_pkt, coap_pkt->object_security, coap_pkt->object_security_len, ROLE_CONFIDENTIAL);
     PRINTF("buffer after restore pkt\n");
     PRINTF_HEX(coap_pkt->buffer, 50);
-
+    printf("SEQ last in func decode %" PRIu32 "\n", ctx->RecipientContext->LastSeq);
     return NO_ERROR;
     
 }

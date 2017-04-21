@@ -14,7 +14,7 @@
 
 #define CONTEXT_KEY_LEN 16 
 #define CONTEXT_INIT_VECT_LEN 7
-#define CONTEXT_SEQ_LEN 4 
+#define CONTEXT_SEQ_LEN sizeof(uint32_t) 
 
 
 #define OSCOAP_SEQ_MAX 10000 //TODO calculate the real value
@@ -22,6 +22,7 @@
 typedef struct OscoapSenderContext OscoapSenderContext;
 typedef struct OscoapRecipientContext OscoapRecipientContext;
 typedef struct OscoapCommonContext OscoapCommonContext;
+typedef struct TokenSeq TokenSeq;
 
 struct OscoapSenderContext
 {
@@ -62,14 +63,22 @@ struct OscoapCommonContext{
   uint8_t Alg;
 };
 
+struct TokenSeq{
+  uint8_t Token[8];
+  uint8_t  TokenLen;
+  uint32_t Seq;
+  TokenSeq* Next;
+};
+
 /* This is the number of contexts that the store can handle */
 #define CONTEXT_NUM 1
+#define TOKEN_SEQ_NUM 2
 
 void oscoap_ctx_store_init();
 
 uint8_t get_info_len(uint8_t id_len, uint8_t out_len);
 
-uint8_t compose_info(uint8_t* buffer, uint8_t alg, uint8_t* id, uint8_t id_len, uint8_t out_len);
+//uint8_t compose_info(uint8_t* buffer, uint8_t alg, uint8_t* id, uint8_t id_len, uint8_t out_len);
 OscoapCommonContext* oscoap_derrive_ctx(uint8_t* master_secret,
            uint8_t master_secret_len, uint8_t* master_salt, uint8_t master_salt_len, uint8_t alg, uint8_t hkdf_alg,
             uint8_t* sid, uint8_t sid_len, uint8_t* rid, uint8_t rid_len, uint8_t replay_window);
@@ -81,6 +90,10 @@ OscoapCommonContext* oscoap_new_ctx( uint8_t* sw_k, uint8_t* sw_iv, uint8_t* rw_
 
 OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, uint8_t rid_len);
 OscoapCommonContext* oscoap_find_ctx_by_token(uint8_t* token, uint8_t token_len);
+
+void init_token_seq_store();
+uint32_t get_seq_from_token(uint8_t* token, uint8_t token_len);
+uint8_t set_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t seq);
 
 int oscoap_free_ctx(OscoapCommonContext *ctx);
 

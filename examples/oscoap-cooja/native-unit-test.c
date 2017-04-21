@@ -43,13 +43,14 @@
 #include "contiki-net.h"
 #include "rest-engine.h"
 #include "er-oscoap.h"
+#include "cose-compression.h"
 
 
 #if PLATFORM_HAS_BUTTON
 #include "dev/button-sensor.h"
 #endif
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -90,7 +91,9 @@ extern resource_t res_battery;
 extern resource_t res_temperature;
 #endif
 
-
+#define NUMBER_OF_URLS 5
+char *service_urls[NUMBER_OF_URLS] =
+{ ".well-known/core", "/actuators/toggle", "battery/", "error/in//path", "/hello" };
 
 /*
 extern resource_t res_battery;
@@ -105,30 +108,14 @@ extern resource_t res_sht11;
 #endif
 */
 
-uint8_t sender_id[] =  { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
-uint8_t sender_key[] = {0xd5, 0xcb, 0x37, 0x10, 0x37, 0x15, 0x34, 0xa1, 0xca, 0x22, 0x4e, 0x19, 0xeb, 0x96, 0xe9, 0x6d };
-uint8_t sender_iv[] = {0x20, 0x75, 0x0b, 0x95, 0xf9, 0x78, 0xc8 };
+uint8_t receiver_key[] = {0xEB,0x43,0x09,0x8A,0x0F,0x6F,0x7B,0x69,0xCE,0xDF,0x29,0xE0,0x80,0x50,0x95,0x82};
+uint8_t receiver_iv[] = {0x58,0xF9,0x1A,0x5C,0xDF,0xF4,0xF5};
 
-uint8_t receiver_id[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
-uint8_t receiver_key[] = {0x21, 0x64, 0x42, 0xda, 0x60, 0x3c, 0x51, 0x59, 0x2d, 0xf4, 0xc3, 0xd0, 0xcd, 0x1d, 0x0d, 0x48 };
-uint8_t receiver_iv[] = {0x01, 0x53, 0xdd, 0xfe, 0xde, 0x44, 0x19 };
+uint8_t sender_key[] =  {0xF8,0x20,0x1E,0xD1,0x5E,0x10,0x37,0xBC,0xAF,0x69,0x06,0x07,0x9A,0xD3,0x0B,0x4F};
+uint8_t sender_iv[] =  {0xE8,0x28,0xA4,0x79,0xD0,0x88,0xC4};
 
-uint8_t master_secret[35] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-            0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 
-            0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 
-            0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23}; 
-
-/*Sender Context: {
-  Sender ID: 73 65 72 76 65 72 
-  Sender Key: d5 cb 37 10 37 15 34 a1 ca 22 4e 19 eb 96 e9 6d 
-  Sender IV: 20 75 0b 95 f9 78 c8 
-}
-Recipient Context: {
-  Recipient ID: 63 6c 69 65 6e 74 
-  Recipient Key: 21 64 42 da 60 3c 51 59 2d f4 c3 d0 cd 1d 0d 48 
-  Recipient IV: 01 53 dd fe de 44 19 
-} */
-
+uint8_t sender_id[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
+uint8_t receiver_id[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
 
 PROCESS(er_example_server, "Erbium Example Server");
 AUTOSTART_PROCESSES(&er_example_server);
@@ -155,35 +142,22 @@ PROCESS_THREAD(er_example_server, ev, data)
 
   /* Initialize the REST engine. */
   rest_init_engine();
-
+  static coap_packet_t request[1];
+  static coap_packet_t incomming_request[1];
+  static coap_packet_t incomming_request2[1];
   /*
    * Bind the resources to their Uri-Path.
    * WARNING: Activating twice only means alternate path, not two instances!
    * All static variables are the same for each URI path.
    */
-  rest_activate_resource(&res_hello, "helloworld");
-/*  rest_activate_resource(&res_mirror, "debug/mirror"); */
-/*  rest_activate_resource(&res_chunks, "test/chunks"); */
-/*  rest_activate_resource(&res_separate, "test/separate"); */
- // rest_activate_resource(&res_push, "test/push");
-/*  rest_activate_resource(&res_event, "sensors/button"); */
-/*  rest_activate_resource(&res_sub, "test/sub"); */
-/*  rest_activate_resource(&res_b1_sep_b2, "test/b1sepb2"); */
+  rest_activate_resource(&res_hello, "hello");
+
 #if PLATFORM_HAS_LEDS
-/*  rest_activate_resource(&res_leds, "actuators/leds"); */
- // rest_activate_resource(&res_toggle, "actuators/toggle");
-#endif
-#if PLATFORM_HAS_LIGHT
- // rest_activate_resource(&res_light, "sensors/light"); 
- // SENSORS_ACTIVATE(light_sensor);  
+  rest_activate_resource(&res_toggle, "actuators/toggle");
 #endif
 #if PLATFORM_HAS_BATTERY
- // rest_activate_resource(&res_battery, "sensors/battery");  
- // SENSORS_ACTIVATE(battery_sensor);  
-#endif
-#if PLATFORM_HAS_TEMPERATURE
-  //rest_activate_resource(&res_temperature, "sensors/temperature");  
- // SENSORS_ACTIVATE(temperature_sensor);  
+  rest_activate_resource(&res_battery, "sensors/battery");  
+  SENSORS_ACTIVATE(battery_sensor);  
 #endif
 
 
@@ -192,46 +166,103 @@ oscoap_ctx_store_init();
 
 //Interop
 
-
-//if(oscoap_derrive_ctx(master_secret, 35, NULL, 0, 12, 1,sender_id, 6, receiver_id, 6, 32) == 0) {
-//  printf("Error: Could not derive new Context!\n");
-//}
-
 if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
   printf("Error: Could not create new Context!\n");
 }
 
+  
+  opt_cose_encrypt_t cose;
+  opt_cose_encrypt_t cose2;
+  OPT_COSE_Init(&cose);
 
-OscoapCommonContext* c = NULL;
-uint8_t rid2[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
-c = oscoap_find_ctx_by_rid(rid2, 6);
-PRINTF("COAP max size %d\n", COAP_MAX_PACKET_SIZE);
-if(c == NULL){
-    PRINTF("could not fetch cid\n");
-} else {
-  	PRINTF("Context sucessfully added to DB!\n");
-  //  oscoap_print_context(c);
-}
-//PRINTF("UIP_CONF_BUFFER_SIZE = %d\n", UIP_CONF_BUFFER_SIZE);
-//#ifndef WATCHDOG_CONF_ENABLE
-//PRINTF(" WATCHDOG_CONF_ENABLE 1\n");
-//#endif
+  uint8_t kid[] = { 0xAA, 0xAA, 0xAA};
+  uint8_t piv[] = { 0xFF};
+  uint8_t ciphertext[] = { 0xb1, 0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8, 0xb9, 0xc0};
+  uint8_t buffer[50];
+  cose.kid = kid;
+  cose.kid_len = 3;
+  cose.partial_iv = piv;
+  cose.partial_iv_len = 1;
+  cose.ciphertext = ciphertext;
+  cose.ciphertext_len = 10;
+  
+  uint8_t ret = cose_compress(&cose, buffer);
+  oscoap_printf_hex(buffer, ret);
+  OPT_COSE_Init(&cose2);
+  cose_decompress(&cose2, buffer, ret);
+  printf("c_len %d, kid_len %d, piv_len %d \n", cose2.ciphertext_len, cose2.kid_len, cose2.partial_iv_len);
+  oscoap_printf_hex(cose2.ciphertext, cose2.ciphertext_len);
+  oscoap_printf_hex(cose2.kid, cose2.kid_len);
+  oscoap_printf_hex(cose2.partial_iv, cose2.partial_iv_len);
 
-/* Define application-specific events here. */
-  while(1) {
-    PROCESS_WAIT_EVENT();
-#if PLATFORM_HAS_BUTTON
-    if(ev == sensors_event && data == &button_sensor) {
-      PRINTF("*******BUTTON*******\n");
+  OPT_COSE_Init(&cose);
+  cose.partial_iv = piv;
+  cose.partial_iv_len = 1;
+  cose.ciphertext = ciphertext;
+  cose.ciphertext_len = 10;
+  ret = cose_compress(&cose, buffer);
+  oscoap_printf_hex(buffer, ret);  
+  OPT_COSE_Init(&cose2);
+  cose_decompress(&cose2, buffer, ret);
+  printf("c_len %d, kid_len %d, piv_len %d \n", cose2.ciphertext_len, cose2.kid_len, cose2.partial_iv_len);
+  oscoap_printf_hex(cose2.ciphertext, cose2.ciphertext_len);
+  oscoap_printf_hex(cose2.kid, cose2.kid_len);
+  oscoap_printf_hex(cose2.partial_iv, cose2.partial_iv_len);
 
-      /* Call the event_handler for this application-specific event. */
-      res_event.trigger();
+  OPT_COSE_Init(&cose);
+  cose.kid = kid;
+  cose.kid_len = 3;
+  cose.ciphertext = ciphertext;
+  cose.ciphertext_len = 10;
+  ret = cose_compress(&cose, buffer);
+  oscoap_printf_hex(buffer, ret);
+  OPT_COSE_Init(&cose2);
+  cose_decompress(&cose2, buffer, ret);
+  printf("c_len %d, kid_len %d, piv_len %d \n", cose2.ciphertext_len, cose2.kid_len, cose2.partial_iv_len);
+  oscoap_printf_hex(cose2.ciphertext, cose2.ciphertext_len);
+  oscoap_printf_hex(cose2.kid, cose2.kid_len);
+  oscoap_printf_hex(cose2.partial_iv, cose2.partial_iv_len);
+/*
+  OscoapCommonContext* c = NULL;
+  uint8_t rid2[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
+  c = oscoap_find_ctx_by_rid(rid2, 6);
+  PRINTF("COAP max s ize %d\n", COAP_MAX_PACKET_SIZE);
+  if(c == NULL){
+      PRINTF("could not fetch cid\n");
+  } else {
+    	PRINTF("Context sucessfully added to DB!\n");
+  }
 
-      /* Also call the separate response example handler. */
-      res_separate.resume();
-    }
-#endif /* PLATFORM_HAS_BUTTON */
-  }                             /* while (1) */
+  coap_init_message(request, COAP_TYPE_CON, COAP_GET, 65535);
+ 
+  //TODO, this should be implemented using the uri -> cid map, not like this.
+  uint8_t rid3[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
+  request->context = oscoap_find_ctx_by_rid(rid3, 6);
+
+  coap_set_header_uri_path(request, service_urls[4]);
+
+  coap_set_header_object_security(request);
+  const uint8_t token[] = { 0x05, 0x05 };
+  coap_set_token(request, token, 2);
+  uint8_t buffer[100];
+  memset(buffer, 0, 100);
+  printf("serializing \n");
+  uint16_t len = coap_serialize_message(request, buffer);
+  printf("done serializing, len %d\n",len);
+  oscoap_printf_hex(buffer, len);
+
+  uint8_t message[40] =  {0x42, 0x01, 0x48, 0x7b, 0x05, 0x05, 0xd0, 0x01, 0x7d, 0x11, 0x83, 0x4c, 0xa2, 0x02, 0x46, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x06, 0x41, 0x07, 0xa0, 0x4e, 0x52, 0x09, 0x65, 0x8c, 0x57, 0xed, 0x11, 0x51, 0x32, 0x9c, 0x18, 0x15, 0x37, 0xc9 };
+  uint8_t message2[40] = {0x42, 0x01, 0x48, 0x7c, 0x05, 0x05, 0xd0, 0x01, 0x7d, 0x11, 0x83, 0x4c, 0xa2, 0x02, 0x46, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x06, 0x41, 0x08, 0xa0, 0x4e, 0x82, 0xfb, 0x67, 0xc2, 0x8e, 0x6f, 0xee, 0x6c, 0xba, 0x69, 0x80, 0xbd, 0x59, 0x92}; 
+
+
+  uint8_t buffer2[100];
+  memcpy(buffer2, message, 40);
+  coap_parse_message(incomming_request, buffer2, len);
+  memcpy(buffer2, message2, 40);
+  
+  printf("\n\n\nOscoap parser\n");
+  oscoap_parser(incomming_request2, buffer2, len, ROLE_COAP);
+  printf("end \n",); */
 
   PROCESS_END();
 }

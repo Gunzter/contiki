@@ -48,8 +48,8 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 size_t  OPT_COSE_Encode(opt_cose_encrypt_t *cose, uint8_t *buffer){
 	size_t ret = 0;
 	ret += OPT_CBOR_put_array(&buffer, 3);
-	ret += OPT_COSE_Encode_Protected(cose, &buffer);
-	ret += OPT_CBOR_put_map(&buffer, 0);
+	ret += OPT_CBOR_put_map(&buffer, 0); //Empty Protected Map
+	ret += OPT_COSE_Encode_Attributes(cose, &buffer);
 //	PRINTF("ciphertext len dec: %d hex: %02x\n", cose->ciphertext_len, cose->ciphertext_len);
 	ret += OPT_CBOR_put_bytes(&buffer, cose->ciphertext_len, cose->ciphertext);
 
@@ -71,9 +71,6 @@ size_t OPT_COSE_Encoded_length(opt_cose_encrypt_t *cose){
 	ret += cose->partial_iv_len;
 	if(cose->kid_len != 0){
 		ret += cose->kid_len + 2; // 1 for key 1 for value
-	}
-	if(cose->sid_len != 0){
-		ret += cose->sid_len + 2;
 	}
 	ret += 1; // Map[0]
 	if(cose->ciphertext_len > 15){ //bytes[ciphertext_len]
@@ -134,7 +131,7 @@ uint8_t OPT_COSE_SetAAD(opt_cose_encrypt_t *cose, uint8_t *aad_buffer, size_t aa
 	return 1;
 }	
 
-uint8_t OPT_COSE_Encode_Protected(opt_cose_encrypt_t *cose, uint8_t **buffer){
+uint8_t OPT_COSE_Encode_Attributes(opt_cose_encrypt_t *cose, uint8_t **buffer){
 	uint8_t elements = 1; // assume Partial IV is mandatory
 	uint8_t protected_len = 3 + cose->partial_iv_len;
 	
@@ -143,10 +140,7 @@ uint8_t OPT_COSE_Encode_Protected(opt_cose_encrypt_t *cose, uint8_t **buffer){
 		protected_len += cose->kid_len + 2;
 	}
 
-	if(cose->sid_len != 0){
-		elements++;
-		protected_len += cose->sid_len + 2;
-	}
+
 	uint8_t ret = 0;
 	if( protected_len > 15){
 		**buffer = 0x58;
@@ -167,10 +161,6 @@ uint8_t OPT_COSE_Encode_Protected(opt_cose_encrypt_t *cose, uint8_t **buffer){
 		ret += OPT_CBOR_put_bytes(buffer, cose->kid_len, cose->kid);
 	}
 
-	if (cose->sid_len != 0){
-		ret += OPT_CBOR_put_unsigned(buffer, COSE_Header_Sender_ID );
-		ret += OPT_CBOR_put_bytes(buffer, cose->sid_len, cose->sid);
-	}
 
 	ret += OPT_CBOR_put_unsigned(buffer, COSE_Header_Partial_IV);
 	ret += OPT_CBOR_put_bytes(buffer, cose->partial_iv_len, cose->partial_iv);
@@ -181,9 +171,10 @@ uint8_t OPT_COSE_Build_AAD(opt_cose_encrypt_t *cose, uint8_t *buffer){
 	uint8_t ret = 0;
 
 	ret += OPT_CBOR_put_array(&buffer, 3);
-	char* encrypted = "Encrypted";
+	char* encrypted = "Encrypt0";
 	ret += OPT_CBOR_put_text(&buffer, encrypted , strlen(encrypted));
-	ret += OPT_COSE_Encode_Protected(cose, &buffer);
+	//ret += OPT_COSE_Encode_Attributes(cose, &buffer);
+	ret += OPT_CBOR_put_map(&buffer, 0); // Encode empty Protected Map
 	ret += OPT_CBOR_put_bytes(&buffer, cose->external_aad_len, cose->external_aad);
 	return ret;
 }
@@ -197,10 +188,6 @@ size_t  OPT_COSE_AAD_length(opt_cose_encrypt_t *cose){
 	//array + text(Encrypted) + bytes + seq_len + bytes + external_aad_len
 	if(cose->kid_len > 0){
 		ret += cose->kid_len;
-		ret += 2; // one byte key one byte byte-tag
-	}
-	if(cose->sid_len > 0){
-		ret += cose->sid_len;
 		ret += 2; // one byte key one byte byte-tag
 	}
 //	PRINTF("COSE AAD len %d\n", ret);
@@ -217,7 +204,7 @@ uint8_t OPT_COSE_SetCiphertextBuffer(opt_cose_encrypt_t *cose, uint8_t *cipherte
 	cose->ciphertext_len = ciphertext_len;
 	return 1;
 }
-uint8_t _OPT_COSE_cbor_protected_map(opt_cose_encrypt_t *cose, uint8_t *buffer, uint8_t len){
+uint8_t OPT_COSE_Parse_Attributes(opt_cose_encrypt_t *cose, uint8_t *buffer, uint8_t len){
 
 	uint8_t byte_len;
 	uint8_t *end_ptr = (uint8_t*)(buffer + len);
@@ -236,13 +223,6 @@ uint8_t _OPT_COSE_cbor_protected_map(opt_cose_encrypt_t *cose, uint8_t *buffer, 
 			buffer++;// step by tag
 			cose->partial_iv = buffer;
 			cose->partial_iv_len = byte_len;
-			buffer += byte_len; //step by bytefield
-		}else if(*buffer == COSE_Header_Sender_ID ){ // COSE_Header_Sender_ID  = 8
-			buffer++; //step by key
-			byte_len = (*buffer & 0x0F);
-			buffer++;// step by tag
-			cose->sid = buffer;
-			cose->sid_len = byte_len;
 			buffer += byte_len; //step by bytefield
 		}else{
 			PRINTF("ERROR unknown map tag\n");
@@ -265,7 +245,7 @@ uint8_t _OPT_COSE_cbor_content(opt_cose_encrypt_t *cose, uint8_t *buffer, uint8_
 
 uint8_t _OPT_COSE_cbor_bytes(opt_cose_encrypt_t *cose, uint8_t *buffer, uint8_t len, uint8_t bytefield){
 	if(bytefield == 0){
-		return _OPT_COSE_cbor_protected_map(cose, buffer,len);
+		return OPT_COSE_Parse_Attributes(cose, buffer,len);
 	}else if(bytefield == 1){
 		return _OPT_COSE_cbor_content(cose, buffer, len);
 	}else{
@@ -354,7 +334,7 @@ uint8_t OPT_COSE_Encrypt(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len)
 	PRINTF("Encrypting:\n");
 	PRINTF("Plaintext:\n");
 	PRINTF_HEX(cose->plaintext, cose->plaintext_len);
-	PRINTF("IV: \n");
+	PRINTF("IV/NONCE: \n");
 	PRINTF_HEX(cose->nonce, cose->nonce_len);
 	PRINTF("Key:\n");
 	PRINTF_HEX(key, key_len);

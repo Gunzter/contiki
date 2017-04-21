@@ -45,9 +45,6 @@ typedef struct opt_cose_encrypt_t{
 	uint8_t* kid; //protected - only if message is request
 	size_t kid_len;
 
-	uint8_t* sid; //protected optional
-	size_t 	 sid_len;
-
 	/* Unprotected shall be empty */
 	
 	uint8_t *nonce;
@@ -68,11 +65,12 @@ typedef struct opt_cose_encrypt_t{
 	size_t serialized_len;
 } opt_cose_encrypt_t;
 
+#define INCLUDE_KID 					  1
+#define INCLUDE_PARTIAL_IV 				  2
 
 #define COSE_Algorithm_AES_CCM_64_64_128 12 
-#define COSE_Header_KID 				  2 //Is 4 is the new version
+#define COSE_Header_KID 				  4 
 #define COSE_Header_Partial_IV 			  6
-#define COSE_Header_Sender_ID 			  8 //This is defined in the OSCOAP draft
 
 void OPT_COSE_Init(opt_cose_encrypt_t *cose);
 
@@ -103,7 +101,7 @@ size_t OPT_COSE_Encode(opt_cose_encrypt_t *cose, uint8_t *buffer);
 uint8_t OPT_COSE_Build_AAD(opt_cose_encrypt_t *cose, uint8_t *buffer);
 size_t  OPT_COSE_AAD_length(opt_cose_encrypt_t *cose);
 
-uint8_t OPT_COSE_Encode_Protected(opt_cose_encrypt_t *cose, uint8_t **buffer);
+uint8_t OPT_COSE_Encode_Attributes(opt_cose_encrypt_t *cose, uint8_t **buffer);
 
 uint8_t OPT_COSE_Encrypt(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len);
 uint8_t OPT_COSE_Decrypt(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len);
