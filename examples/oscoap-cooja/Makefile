@@ -1,4 +1,4 @@
-all: er-example-server er-example-client 
+all: er-example-server er-example-client er-example-observe-client
 # use target "er-plugtest-server" explicitly when requried 
 
 unittest: native-unit-test
@@ -10,7 +10,7 @@ CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 #For saving .s and .o files
 #CFLAGS += -save-temps
 #For that extra special touch :) 
-#CFLAGS += -Wall -Wextra
+#CFLAGS += -Wall -Wextra -Wunused-function  
 
 # automatically build RESTful resources
 REST_RESOURCES_DIR = ./resources

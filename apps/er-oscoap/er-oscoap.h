@@ -40,9 +40,6 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define CLEAR_OPTION(packet, opt) ((packet)->options[opt / OPTION_MAP_SIZE] &= ~(1 << (opt % OPTION_MAP_SIZE))) //clear one bit
 
-#define ROLE_COAP         1
-#define ROLE_CONFIDENTIAL 2
-#define ROLE_PROTECTED    3
 
 //debug methods
 void oscoap_printf_hex(unsigned char *data, unsigned int len);

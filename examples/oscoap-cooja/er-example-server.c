@@ -165,7 +165,7 @@ PROCESS_THREAD(er_example_server, ev, data)
 /*  rest_activate_resource(&res_mirror, "debug/mirror"); */
 /*  rest_activate_resource(&res_chunks, "test/chunks"); */
 /*  rest_activate_resource(&res_separate, "test/separate"); */
- // rest_activate_resource(&res_push, "test/push");
+  rest_activate_resource(&res_push, "test/push");
 /*  rest_activate_resource(&res_event, "sensors/button"); */
 /*  rest_activate_resource(&res_sub, "test/sub"); */
 /*  rest_activate_resource(&res_b1_sep_b2, "test/b1sepb2"); */
@@ -189,7 +189,6 @@ PROCESS_THREAD(er_example_server, ev, data)
 
 oscoap_ctx_store_init();
 
-
 //Interop
 
 
@@ -212,10 +211,8 @@ if(c == NULL){
   	PRINTF("Context sucessfully added to DB!\n");
   //  oscoap_print_context(c);
 }
-//PRINTF("UIP_CONF_BUFFER_SIZE = %d\n", UIP_CONF_BUFFER_SIZE);
-//#ifndef WATCHDOG_CONF_ENABLE
-//PRINTF(" WATCHDOG_CONF_ENABLE 1\n");
-//#endif
+
+
 
 /* Define application-specific events here. */
   while(1) {

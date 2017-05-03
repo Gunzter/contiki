@@ -97,32 +97,32 @@ OscoapCommonContext* oscoap_derrive_ctx(uint8_t* master_secret,uint8_t master_se
       salt_len = master_salt_len;
     }
   
-    uint8_t info_buffer_size;
+  //  uint8_t info_buffer_size;
     uint8_t info_len;
 
     //Sender Key
-    info_buffer_size = get_info_len( sid_len, CONTEXT_KEY_LEN);
+ //   info_buffer_size = get_info_len( sid_len, CONTEXT_KEY_LEN);
     info_len = compose_info(info_buffer, alg, sid, sid_len, CONTEXT_KEY_LEN);
   //  printf("Sender key info len: %d\n", info_len);
   //  oscoap_printf_hex(info_buffer, info_len);
     hkdf(SHA256, salt, salt_len, master_secret, master_secret_len, info_buffer, info_len, sender_ctx->SenderKey, CONTEXT_KEY_LEN );
 
     //Sender IV
-    info_buffer_size = get_info_len( sid_len, CONTEXT_INIT_VECT_LEN);
+ //   info_buffer_size = get_info_len( sid_len, CONTEXT_INIT_VECT_LEN);
     info_len = compose_info(info_buffer, alg, sid, sid_len, CONTEXT_INIT_VECT_LEN);
  //   printf("Sender IV info len: %d\n", info_len);
  //   oscoap_printf_hex(info_buffer, info_len);
     hkdf(SHA256, salt, salt_len, master_secret, master_secret_len, info_buffer, info_len, sender_ctx->SenderIv, CONTEXT_INIT_VECT_LEN );
 
     //Receiver Key
-    info_buffer_size = get_info_len( rid_len, CONTEXT_KEY_LEN);
+   // info_buffer_size = get_info_len( rid_len, CONTEXT_KEY_LEN);
     info_len = compose_info(info_buffer, alg, rid, rid_len, CONTEXT_KEY_LEN);
  //   printf("Receiver Key info len: %d\n", info_len);
  //   oscoap_printf_hex(info_buffer, info_len);
     hkdf(SHA256, salt, salt_len, master_secret, master_secret_len, info_buffer, info_len, recipient_ctx->RecipientKey, CONTEXT_KEY_LEN );
 
     //Receiver IV
-    info_buffer_size = get_info_len( rid_len, CONTEXT_INIT_VECT_LEN);
+  //  info_buffer_size = get_info_len( rid_len, CONTEXT_INIT_VECT_LEN);
     info_len = compose_info(info_buffer, alg, rid, rid_len, CONTEXT_INIT_VECT_LEN);
   //  printf("Receiver IV info len: %d\n", info_len);
   //  oscoap_printf_hex(info_buffer, info_len);
@@ -318,7 +318,7 @@ uint32_t get_seq_from_token(uint8_t* token, uint8_t token_len){
   }
 
   uint32_t seq = ptr->Seq;
-  memb_free(&token_seq, ptr);
+  //memb_free(&token_seq, ptr);
   printf("fetchinseq %" PRIu32 "\n with token :", seq);
   oscoap_printf_hex(token, token_len);
   return seq; 
@@ -341,15 +341,15 @@ uint8_t set_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t seq){
   return 1;
 }
 
-
+#if DEBUG
 void oscoap_print_context(OscoapCommonContext* ctx){
+
     PRINTF("Print Context:\n");
     PRINTF("Master Secret: ");
     PRINTF_HEX(ctx->MasterSecret, ctx->MasterSecretLen);
     PRINTF("Master Salt\n");
     PRINTF_HEX(ctx->MasterSalt, ctx->MasterSaltLen);
     PRINTF("ALG: %d\n", ctx->Alg);
-
     OscoapSenderContext* s = ctx->SenderContext;
     PRINTF("Sender Context: {\n");
     PRINTF("\tSender ID: ");
@@ -369,5 +369,7 @@ void oscoap_print_context(OscoapCommonContext* ctx){
     PRINTF("\tRecipient IV: ");
     PRINTF_HEX(r->RecipientIv, CONTEXT_INIT_VECT_LEN);
     PRINTF("}\n");
-  
+
+
 }
+#endif  

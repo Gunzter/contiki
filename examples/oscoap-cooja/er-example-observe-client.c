@@ -43,6 +43,7 @@
 #include "contiki-net.h"
 #include "er-coap-engine.h"
 #include "dev/button-sensor.h"
+#include "er-oscoap-context.h"
 
 /*----------------------------------------------------------------------------*/
 #define DEBUG 0
@@ -67,8 +68,9 @@
 
 /*----------------------------------------------------------------------------*/
 /* FIXME: This server address is hard-coded for Cooja */
-#define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0x0212, \
-                                          0x7402, 0x0002, 0x0202)
+//#define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0x0212, \
+//                                          0x7402, 0x0002, 0x0202)
+#define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0xc30c, 0, 0, 0x0002)
 #define REMOTE_PORT     UIP_HTONS(COAP_DEFAULT_PORT)
 /* Toggle interval in seconds */
 #define TOGGLE_INTERVAL 30
@@ -78,7 +80,15 @@
 /*----------------------------------------------------------------------------*/
 static uip_ipaddr_t server_ipaddr[1]; /* holds the server ip address */
 static coap_observee_t *obs;
+//OSCOAP
+OscoapCommonContext* ctx = NULL;
+uint8_t sender_id[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
+uint8_t sender_key[] = {0x21, 0x64, 0x42, 0xda, 0x60, 0x3c, 0x51, 0x59, 0x2d, 0xf4, 0xc3, 0xd0, 0xcd, 0x1d, 0x0d, 0x48 };
+uint8_t sender_iv[] = {0x01, 0x53, 0xdd, 0xfe, 0xde, 0x44, 0x19 };
 
+uint8_t receiver_id[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
+uint8_t receiver_key[] =  {0xd5, 0xcb, 0x37, 0x10, 0x37, 0x15, 0x34, 0xa1, 0xca, 0x22, 0x4e, 0x19, 0xeb, 0x96, 0xe9, 0x6d };
+uint8_t receiver_iv[] =  {0x20, 0x75, 0x0b, 0x95, 0xf9, 0x78, 0xc8 };
 /*----------------------------------------------------------------------------*/
 PROCESS(er_example_observe_client, "Erbium Coap Observe Client Example");
 AUTOSTART_PROCESSES(&er_example_observe_client);
@@ -135,8 +145,11 @@ toggle_observation(void)
     obs = NULL;
   } else {
     printf("Starting observation\n");
-    obs = coap_obs_request_registration(server_ipaddr, REMOTE_PORT,
-                                        OBS_RESOURCE_URI, notification_callback, NULL);
+    obs = oscoap_obs_request_registration(server_ipaddr, REMOTE_PORT,
+                                        OBS_RESOURCE_URI, notification_callback, NULL, ctx);
+
+ //   obs = coap_obs_request_registration(server_ipaddr, REMOTE_PORT,
+ //                                       OBS_RESOURCE_URI, notification_callback, NULL);
   }
 }
 /*----------------------------------------------------------------------------*/
@@ -155,6 +168,19 @@ PROCESS_THREAD(er_example_observe_client, ev, data)
   SERVER_NODE(server_ipaddr);
   /* receives all CoAP messages */
   coap_init_engine();
+
+  oscoap_ctx_store_init();
+  init_token_seq_store();
+
+  if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
+    printf("Error: Could not create new Context!\n");
+  }
+
+  ctx = oscoap_find_ctx_by_rid(receiver_id, 6);
+  if(ctx == NULL){
+    printf("Error: Context could not be fetched from DB!\n");
+  }
+
   /* init timer and button (if available) */
   etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
 #if PLATFORM_HAS_BUTTON

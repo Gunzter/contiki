@@ -1318,7 +1318,15 @@ oscoap_serializer(void *packet, uint8_t *buffer, uint8_t role)
   //However, maybe one can use the same buffer to save memory
   
   coap_pkt->buffer = buffer;
-
+  #if DEBUG
+    if(role == ROLE_COAP){
+      PRINTF("SERIALIZING ROLE COAP\n");
+    } else if (role == ROLE_CONFIDENTIAL){
+      PRINTF("SERIALIZING ROLE CONFIDENTIAL\n");
+    } else if( role == ROLE_PROTECTED){
+      PRINTF("SERIALIZING ROLE PROTECTED\n");
+    }
+  #endif
   if(role == ROLE_COAP){
     coap_pkt->version = 1;
 
@@ -1363,43 +1371,57 @@ oscoap_serializer(void *packet, uint8_t *buffer, uint8_t role)
   PRINTF("-Serializing options at %p-\n", option);
 
   /* The options must be serialized in the order of their number */
-  COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_IF_MATCH, if_match, "If-Match");
+  if( role == ROLE_COAP || role == ROLE_CONFIDENTIAL){
+    COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_IF_MATCH, if_match, "If-Match");
+  }
+ 
   if( role == ROLE_COAP || role == ROLE_PROTECTED ){
     COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_URI_HOST, uri_host, '\0',
                                "Uri-Host");
   }
-  COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_ETAG, etag, "ETag");
-  COAP_SERIALIZE_INT_OPTION(COAP_OPTION_IF_NONE_MATCH,
-                            content_format -
-                            coap_pkt->
-                            content_format /* hack to get a zero field */,
-                            "If-None-Match");
+ 
+  if(  role == ROLE_COAP || role == ROLE_CONFIDENTIAL){
+    COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_ETAG, etag, "ETag");
+    COAP_SERIALIZE_INT_OPTION(COAP_OPTION_IF_NONE_MATCH,
+                              content_format -
+                              coap_pkt->
+                              content_format /* hack to get a zero field */,
+                              "If-None-Match");
+  }
+
   COAP_SERIALIZE_INT_OPTION(COAP_OPTION_OBSERVE, observe, "Observe");
+  
   if( role == ROLE_COAP || role == ROLE_PROTECTED ){
     COAP_SERIALIZE_INT_OPTION(COAP_OPTION_URI_PORT, uri_port, "Uri-Port");
   }
+  
   COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_LOCATION_PATH, location_path, '/',
                                "Location-Path");
+ 
   if( role == ROLE_COAP || role == ROLE_CONFIDENTIAL ){
     COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_URI_PATH, uri_path, '/',
                                "Uri-Path");
   }
-  PRINTF("Serialize content format: %d\n", coap_pkt->content_format);
-  COAP_SERIALIZE_INT_OPTION(COAP_OPTION_CONTENT_FORMAT, content_format,
+  
+  if( role == ROLE_CONFIDENTIAL){
+    PRINTF("Serialize content format: %d\n", coap_pkt->content_format);
+    COAP_SERIALIZE_INT_OPTION(COAP_OPTION_CONTENT_FORMAT, content_format,
                             "Content-Format");
+  }
   if( role == ROLE_COAP || role == ROLE_CONFIDENTIAL ){
     COAP_SERIALIZE_INT_OPTION(COAP_OPTION_MAX_AGE, max_age, "Max-Age");
     COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_URI_QUERY, uri_query, '&',
                                "Uri-Query");
   }
+ 
   if( role == ROLE_COAP || role == ROLE_CONFIDENTIAL ){
     COAP_SERIALIZE_INT_OPTION(COAP_OPTION_ACCEPT, accept, "Accept");
     COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_LOCATION_QUERY, location_query,
                                '&', "Location-Query");
   }
+  
   if(role == ROLE_COAP ){
-    COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_OBJECT_SECURITY, object_security, "Object-Security");
-
+    COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_OBJECT_SECURITY, object_security, "Object-Security"); //if number = 21
     COAP_SERIALIZE_BLOCK_OPTION(COAP_OPTION_BLOCK2, block2, "Block2");
     COAP_SERIALIZE_BLOCK_OPTION(COAP_OPTION_BLOCK1, block1, "Block1");
     COAP_SERIALIZE_INT_OPTION(COAP_OPTION_SIZE2, size2, "Size2");
@@ -1443,7 +1465,11 @@ oscoap_serializer(void *packet, uint8_t *buffer, uint8_t role)
          coap_pkt->buffer[4],
          coap_pkt->buffer[5], coap_pkt->buffer[6], coap_pkt->buffer[7]
          );
-  return (option - buffer) + coap_pkt->payload_len; /* packet length */
+  if( role == ROLE_COAP || role == ROLE_CONFIDENTIAL){
+    return (option - buffer) + coap_pkt->payload_len; /* packet length */
+  } else { // ROLE PROTECTED
+    return (option - buffer);
+  }
 }
 
 coap_status_t oscoap_parser(void *packet, uint8_t *data,
@@ -1455,7 +1481,7 @@ coap_status_t oscoap_parser(void *packet, uint8_t *data,
   //oscoap_printf_hex(data, data_len);
 
   coap_packet_t *const coap_pkt = (coap_packet_t *)packet;
- 
+  
   if(role == ROLE_COAP){
     oscoap_printf_hex(data, data_len);
     // initialize packet 

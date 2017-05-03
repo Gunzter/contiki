@@ -76,7 +76,7 @@ uint8_t OPT_CBOR_put_map(uint8_t **buffer, uint8_t elements){
 }
 
 uint8_t OPT_CBOR_put_unsigned(uint8_t **buffer, uint8_t value){
-	if(value > 0x17 && value <= 0xFF){
+	if(value > 0x17 ){
 			(**buffer) = (0x18);
 			(*buffer)++;
 			(**buffer) = (value);

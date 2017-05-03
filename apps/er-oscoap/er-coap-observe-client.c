@@ -42,6 +42,7 @@
 
 #include "er-coap.h"
 #include "er-coap-observe-client.h"
+#include "er-oscoap-context.h"
 
 /* Compile this code only if client-side support for CoAP Observe is required */
 #if COAP_OBSERVE_CLIENT
@@ -321,6 +322,46 @@ coap_obs_request_registration(uip_ipaddr_t *addr, uint16_t port, char *uri,
   coap_set_header_observe(request, 0);
   token_len = coap_generate_token(&token);
   set_token(request, token, token_len);
+  t = coap_new_transaction(request->mid, addr, port);
+  if(t) {
+    obs = coap_obs_add_observee(addr, port, (uint8_t *)token, token_len, uri,
+                                notification_callback, data);
+    if(obs) {
+      t->callback = handle_obs_registration_response;
+      t->callback_data = obs;
+      t->packet_len = coap_serialize_message(request, t->packet);
+      coap_send_transaction(t);
+    } else {
+      PRINTF("Could not allocate obs_subject resource buffer");
+      coap_clear_transaction(t);
+    }
+  } else {
+    PRINTF("Could not allocate transaction buffer");
+  }
+  return obs;
+}
+
+coap_observee_t *
+oscoap_obs_request_registration(uip_ipaddr_t *addr, uint16_t port, char *uri,
+                              notification_callback_t notification_callback,
+                              void *data, OscoapCommonContext* ctx)
+{
+  coap_packet_t request[1];
+  coap_transaction_t *t;
+  uint8_t *token;
+  uint8_t token_len;
+  coap_observee_t *obs;
+
+  obs = NULL;
+  coap_init_message(request, COAP_TYPE_CON, COAP_GET, coap_get_mid());
+  coap_set_header_uri_path(request, uri);
+  coap_set_header_observe(request, 0);
+  request->context = ctx;
+
+  coap_set_header_object_security(request); //Seting OSCOAP option here
+  token_len = coap_generate_token(&token);
+  set_token(request, token, token_len);
+
   t = coap_new_transaction(request->mid, addr, port);
   if(t) {
     obs = coap_obs_add_observee(addr, port, (uint8_t *)token, token_len, uri,

@@ -35,7 +35,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include "er-oscoap.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -48,16 +48,12 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 size_t  OPT_COSE_Encode(opt_cose_encrypt_t *cose, uint8_t *buffer){
 	size_t ret = 0;
 	ret += OPT_CBOR_put_array(&buffer, 3);
-	ret += OPT_CBOR_put_map(&buffer, 0); //Empty Protected Map
+	ret += OPT_CBOR_put_bytes(&buffer, 0, NULL); //Empty Protected Map
 	ret += OPT_COSE_Encode_Attributes(cose, &buffer);
 //	PRINTF("ciphertext len dec: %d hex: %02x\n", cose->ciphertext_len, cose->ciphertext_len);
 	ret += OPT_CBOR_put_bytes(&buffer, cose->ciphertext_len, cose->ciphertext);
 
 	return ret;
-}
-
-uint8_t OPT_COSE_ENCRYPT(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len){
-	return 0;
 }
 
 void OPT_COSE_Init(opt_cose_encrypt_t *cose){
@@ -132,15 +128,20 @@ uint8_t OPT_COSE_SetAAD(opt_cose_encrypt_t *cose, uint8_t *aad_buffer, size_t aa
 }	
 
 uint8_t OPT_COSE_Encode_Attributes(opt_cose_encrypt_t *cose, uint8_t **buffer){
-	uint8_t elements = 1; // assume Partial IV is mandatory
-	uint8_t protected_len = 3 + cose->partial_iv_len;
+	uint8_t elements = 0; // assume Partial IV is mandatory
+	uint8_t protected_len = 1;
+
+	if(cose->partial_iv_len != 0){
+		elements++;
+		protected_len += cose->partial_iv_len + 2;
+	}
 	
 	if(cose->kid_len != 0){
 		elements++;
 		protected_len += cose->kid_len + 2;
 	}
 
-
+	//This creates a CBOR byte-array for the map of attributes
 	uint8_t ret = 0;
 	if( protected_len > 15){
 		**buffer = 0x58;
@@ -161,9 +162,10 @@ uint8_t OPT_COSE_Encode_Attributes(opt_cose_encrypt_t *cose, uint8_t **buffer){
 		ret += OPT_CBOR_put_bytes(buffer, cose->kid_len, cose->kid);
 	}
 
-
-	ret += OPT_CBOR_put_unsigned(buffer, COSE_Header_Partial_IV);
-	ret += OPT_CBOR_put_bytes(buffer, cose->partial_iv_len, cose->partial_iv);
+	if(cose->partial_iv_len != 0){
+		ret += OPT_CBOR_put_unsigned(buffer, COSE_Header_Partial_IV);
+		ret += OPT_CBOR_put_bytes(buffer, cose->partial_iv_len, cose->partial_iv);
+	}
 	return ret;
 }
 
@@ -174,7 +176,7 @@ uint8_t OPT_COSE_Build_AAD(opt_cose_encrypt_t *cose, uint8_t *buffer){
 	char* encrypted = "Encrypt0";
 	ret += OPT_CBOR_put_text(&buffer, encrypted , strlen(encrypted));
 	//ret += OPT_COSE_Encode_Attributes(cose, &buffer);
-	ret += OPT_CBOR_put_map(&buffer, 0); // Encode empty Protected Map
+	ret += OPT_CBOR_put_bytes(&buffer, 0,  NULL); // Encode empty Protected Map
 	ret += OPT_CBOR_put_bytes(&buffer, cose->external_aad_len, cose->external_aad);
 	return ret;
 }
@@ -359,7 +361,7 @@ uint8_t OPT_COSE_Encrypt(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len)
 	}
 
 	PRINTF("Error in AES CCM Encrypt \n");
-	int x = ret;
+	unsigned int x = ret;
 	PRINTF("%s%x\n", x<0?"-":"", x<0?-(unsigned)x:x);
 	return 1;
 }
@@ -411,7 +413,7 @@ uint8_t OPT_COSE_Decrypt(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len)
    	}
 
 	PRINTF("Error in AES CCM Decrypt \n");
-	int x = ret;
+	unsigned int x = ret;
 	PRINTF("%s%x\n", x<0?"-":"", x<0?-(unsigned)x:x);
 	return 1;
 

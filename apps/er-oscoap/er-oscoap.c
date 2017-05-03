@@ -41,8 +41,9 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "opt-cbor.h"
 #include <inttypes.h>
 #include <sys/types.h>
+#include "cose-compression.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -99,10 +100,17 @@ external_aad = [
 size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* cose, uint8_t* buffer, uint8_t sending){
   uint8_t ret = 0;
   uint8_t seq_buffer[8];
+  uint8_t protected_buffer[20];
   ret += OPT_CBOR_put_array(&buffer, 6);
   ret += OPT_CBOR_put_unsigned(&buffer, 1); //version is always 1
   ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->code)); //COAP code is one byte //TODO should be
-  ret += OPT_CBOR_put_bytes(&buffer, 0, NULL); //Options go here
+  uint32_t obs;
+  int s = coap_get_header_observe(coap_pkt, &obs);
+  printf("observe s = %d obs = %" PRIu32 "\n", s, obs);
+  size_t protected_len = oscoap_serializer(coap_pkt, protected_buffer, ROLE_PROTECTED);
+  printf("protected, len %d\n", protected_len);
+  oscoap_printf_hex(protected_buffer, protected_len);
+  ret += OPT_CBOR_put_bytes(&buffer, protected_len, protected_buffer); 
   ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->context->Alg));
 
 
@@ -184,7 +192,7 @@ uint64_t bytes_to_uint32(uint8_t* bytes, size_t len){
 uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encrypt_t *cose){
 
   uint64_t incomming_seq = bytes_to_uint32(cose->partial_iv, cose->partial_iv_len);
-  PRINTF("SEQ: incomming %" PRIu32 "\n", incomming_seq);
+  PRINTF("SEQ: incomming %" PRIu64 "\n", incomming_seq);
   PRINTF("SEQ: last %" PRIu32 "\n", ctx->LastSeq);
   PRINTF_HEX(cose->partial_iv, cose->partial_iv_len);
    if (ctx->LastSeq >= OSCOAP_SEQ_MAX) {
@@ -268,7 +276,7 @@ void roll_back(OscoapRecipientContext* ctx) {
 size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
     
   PRINTF("PREPARE MESAGE\n");
-
+  
   static coap_packet_t * coap_pkt;
   coap_pkt = (coap_packet_t *)packet;
 
@@ -319,6 +327,7 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   uint8_t external_aad_buffer[external_aad_size]; 
   
   external_aad_size = oscoap_prepare_external_aad(coap_pkt, &cose, external_aad_buffer, 1);
+
   if(coap_is_request(coap_pkt)){
       set_seq_from_token(coap_pkt->token, coap_pkt->token_len, coap_pkt->context->SenderContext->Seq);
       oscoap_increment_sender_seq(coap_pkt->context);
@@ -847,7 +856,7 @@ void oscoap_restore_packet(void* packet){
 
 /* Below is debug functions */
 void oscoap_printf_hex(unsigned char *data, unsigned int len){
-	int i=0;
+	unsigned int i=0;
 	for(i=0; i<len; i++)
 	{
 		printf("%02x ",data[i]);
@@ -856,7 +865,7 @@ void oscoap_printf_hex(unsigned char *data, unsigned int len){
 }
 
 void oscoap_printf_char(unsigned char *data, unsigned int len){
-	int i=0;
+	unsigned int i=0;
 	for(i=0; i<len; i++)
 	{
 		printf(" %c ",data[i]);
@@ -876,7 +885,7 @@ void oscoap_printf_char(unsigned char *data, unsigned int len){
   (byte & 0x01 ? 1 : 0) 
 
 void oscoap_printf_bin(unsigned char *data, unsigned int len){
-	int i=0;
+	unsigned int i=0;
 	for(i=0; i<len; i++)
 	{
 		PRINTF(" "BYTETOBINARYPATTERN" ",BYTETOBINARY(data[i]));
