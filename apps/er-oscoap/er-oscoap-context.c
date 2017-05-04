@@ -312,23 +312,39 @@ uint32_t get_seq_from_token(uint8_t* token, uint8_t token_len){
 
   while(memcmp(ptr->Token, token, cmp_len) != 0){
     if(ptr == NULL){
-      return 255;
+      return 255; //TODO handle error
     }
     cmp_len = MIN(token_len, ptr->TokenLen);
   }
 
   uint32_t seq = ptr->Seq;
-  //memb_free(&token_seq, ptr);
+
   printf("fetchinseq %" PRIu32 "\n with token :", seq);
   oscoap_printf_hex(token, token_len);
   return seq; 
 
 }
 
+void remove_seq_from_token(uint8_t* token, uint8_t token_len){
+   TokenSeq* ptr = token_seq_store;
+
+   uint8_t cmp_len = MIN(token_len, ptr->TokenLen);
+
+  while(memcmp(ptr->Token, token, cmp_len) != 0){
+    if(ptr == NULL){
+      return 255;
+    }
+    cmp_len = MIN(token_len, ptr->TokenLen);
+  }
+
+//  ptr->next
+  memb_free(&token_seq, ptr);
+}
+
 uint8_t set_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t seq){
   TokenSeq* token_seq_ptr = memb_alloc(&token_seq);
   if(token_seq_ptr == NULL){
-    return 0; 
+    return 0;
   }
 
   memcpy(token_seq_ptr->Token, token, token_len);

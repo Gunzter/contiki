@@ -101,15 +101,20 @@ size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* 
   uint8_t ret = 0;
   uint8_t seq_buffer[8];
   uint8_t protected_buffer[20];
+  size_t  protected_len;
   ret += OPT_CBOR_put_array(&buffer, 6);
   ret += OPT_CBOR_put_unsigned(&buffer, 1); //version is always 1
   ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->code)); //COAP code is one byte //TODO should be
   uint32_t obs;
-  int s = coap_get_header_observe(coap_pkt, &obs);
-  printf("observe s = %d obs = %" PRIu32 "\n", s, obs);
-  size_t protected_len = oscoap_serializer(coap_pkt, protected_buffer, ROLE_PROTECTED);
-  printf("protected, len %d\n", protected_len);
-  oscoap_printf_hex(protected_buffer, protected_len);
+  if(coap_is_request(coap_pkt)){
+    int s = coap_get_header_observe(coap_pkt, &obs);
+    printf("observe s = %d obs = %" PRIu32 "\n", s, obs);
+    protected_len = oscoap_serializer(coap_pkt, protected_buffer, ROLE_PROTECTED);
+    printf("protected, len %d\n", protected_len);
+    oscoap_printf_hex(protected_buffer, protected_len);
+  } else {
+    protected_len = 0;
+  }
   ret += OPT_CBOR_put_bytes(&buffer, protected_len, protected_buffer); 
   ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->context->Alg));
 
@@ -370,8 +375,9 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
         coap_set_header_object_security_content(packet, opt_buffer, serialized_len);     
   }
   
-  coap_set_header_max_age(packet, 0);
+
   clear_options(coap_pkt);
+  coap_set_header_max_age(packet, 0); //OSCOAP messages shall always have an extra Max-Age = 0 to prevent cashing
   //size_t serialized_size = coap_serialize_message_coap(packet, buffer);
 
   size_t serialized_size = oscoap_serializer(packet, buffer, ROLE_COAP);
@@ -513,6 +519,7 @@ void clear_options(coap_packet_t* coap_pkt){
     coap_pkt->options[COAP_OPTION_LOCATION_PATH / OPTION_MAP_SIZE] &= ~(1 << (COAP_OPTION_LOCATION_PATH % OPTION_MAP_SIZE));
     coap_pkt->options[COAP_OPTION_URI_PATH / OPTION_MAP_SIZE] &= ~(1 << (COAP_OPTION_URI_PATH % OPTION_MAP_SIZE));
     coap_pkt->options[COAP_OPTION_CONTENT_FORMAT / OPTION_MAP_SIZE] &= ~(1 << (COAP_OPTION_CONTENT_FORMAT % OPTION_MAP_SIZE));
+    /* Max-Age shall me duplicated */
     coap_pkt->options[COAP_OPTION_URI_QUERY / OPTION_MAP_SIZE] &=  ~(1 << (COAP_OPTION_URI_QUERY % OPTION_MAP_SIZE));
     coap_pkt->options[COAP_OPTION_ACCEPT / OPTION_MAP_SIZE] &= ~(1 << (COAP_OPTION_ACCEPT % OPTION_MAP_SIZE));
     coap_pkt->options[COAP_OPTION_LOCATION_QUERY / OPTION_MAP_SIZE] &= ~(1 << (COAP_OPTION_LOCATION_QUERY % OPTION_MAP_SIZE));

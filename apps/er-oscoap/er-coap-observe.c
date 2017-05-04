@@ -253,6 +253,7 @@ coap_notify_observers_sub(resource_t *resource, const char *subpath)
                               REST_MAX_CHUNK_SIZE, NULL);
 
         if(notification->code < BAD_REQUEST_4_00) {
+          //TODO set proper observe value
           coap_set_header_observe(notification, (obs->obs_counter)++);
         }
         coap_set_token(notification, obs->token, obs->token_len);
