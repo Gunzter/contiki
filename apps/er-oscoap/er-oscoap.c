@@ -289,7 +289,7 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   OPT_COSE_Init(&cose);
 
   if(coap_pkt->context == NULL){
-    PRINTF("ERROR: NO CONTEXT IN PREPARE MESSAGE!\n");
+    printf("ERROR: NO CONTEXT IN PREPARE MESSAGE!\n");
     return 0;
   }
   uint8_t plaintext_buffer[50]; //TODO, workaround this to decrease memory footprint
