@@ -311,9 +311,12 @@ uint32_t get_seq_from_token(uint8_t* token, uint8_t token_len){
    uint8_t cmp_len = MIN(token_len, ptr->TokenLen);
 
   while(memcmp(ptr->Token, token, cmp_len) != 0){
+    
+    ptr = ptr->Next;
     if(ptr == NULL){
       return 255; //TODO handle error
     }
+
     cmp_len = MIN(token_len, ptr->TokenLen);
   }
 
