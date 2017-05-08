@@ -42,12 +42,12 @@
       <moteinterface>org.contikios.cooja.mspmote.interfaces.MspDebugOutput</moteinterface>
     </motetype>
     <motetype>
-      org.contikios.cooja.mspmote.Z1MoteType
+      org.contikios.cooja.mspmote.WismoteMoteType
       <identifier>z13</identifier>
       <description>s</description>
-      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-server.c</source>
-      <commands EXPORT="discard">make er-example-server.z1 TARGET=z1</commands>
-      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-server.z1</firmware>
+      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-interops/er-example-server.c</source>
+      <commands EXPORT="discard">make er-example-server.wismote TARGET=wismote TARGET_MEMORY_MODEL=large</commands>
+      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-interops/er-example-server.wismote</firmware>
       <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.RimeAddress</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.IPAddress</moteinterface>
@@ -101,7 +101,7 @@
   <plugin>
     org.contikios.cooja.plugins.SimControl
     <width>400</width>
-    <z>1</z>
+    <z>0</z>
     <height>160</height>
     <location_x>1</location_x>
     <location_y>404</location_y>
@@ -165,6 +165,18 @@
     <height>1091</height>
     <location_x>403</location_x>
     <location_y>4</location_y>
+  </plugin>
+ <plugin>
+    org.contikios.cooja.plugins.ScriptRunner
+    <plugin_config>
+      <scriptfile>[CONTIKI_DIR]/examples/oscoap-interops/test.js</scriptfile>
+      <active>true</active>
+    </plugin_config>
+    <width>596</width>
+    <z>1</z>
+    <height>725</height>
+    <location_x>591</location_x>
+    <location_y>225</location_y>
   </plugin>
 </simconf>
 
