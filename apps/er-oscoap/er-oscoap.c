@@ -43,7 +43,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include "cose-compression.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -318,7 +318,10 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   oscoap_printf_hex(seq_buffer, seq_bytes_len);
   oscoap_printf_hex(coap_pkt->context->SenderContext->SenderIv, 7);
   create_iv((uint8_t*)coap_pkt->context->SenderContext->SenderIv, nonce_buffer, seq_buffer, seq_bytes_len);
-
+  if( (!IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)) && coap_is_request(coap_pkt)){ 
+    //Non observe reply
+    nonce_buffer[0] = nonce_buffer[0] ^ (1 << 7);
+  }
   
   OPT_COSE_SetNonce(&cose, nonce_buffer, CONTEXT_INIT_VECT_LEN);
   
@@ -435,35 +438,40 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
   		  PRINTF("context is not fetched form DB kid: ");
         PRINTF_HEX(cose.kid, cose.kid_len);
         return OSCOAP_CONTEXT_NOT_FOUND;
-  	}else{
+  	}
         size_t seq_len;
         uint8_t *seq;
 
 
-        if(coap_is_request(coap_pkt)){  //TODO add check to se that we do not have observe to
-          uint8_t seq_result = oscoap_validate_receiver_seq(ctx->RecipientContext, &cose);
-          if(seq_result != 0){
-            PRINTF("SEQ Error!\n");
-            return seq_result; 
-          }
-          seq = OPT_COSE_GetPartialIV(&cose, &seq_len);
-        } else { //Reply
-          uint32_t sequence_numer = get_seq_from_token(coap_pkt->token, coap_pkt->token_len);
-          if(! IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){
-            remove_seq_from_token(coap_pkt->token, coap_pkt->token_len);
-          }
-          printf("retreived seq %" PRIu32 "\n from token: ", sequence_numer);
-          oscoap_printf_hex(coap_pkt->token, coap_pkt->token_len);
-          seq_len = to_bytes(sequence_numer, seq_buffer);
-          seq = seq_buffer;
-          printf("seq bytes\n");
-          oscoap_printf_hex(seq, seq_len);
-          OPT_COSE_SetPartialIV(&cose, seq, seq_len);
+    if(coap_is_request(coap_pkt)){  //TODO add check to se that we do not have observe to
+        uint8_t seq_result = oscoap_validate_receiver_seq(ctx->RecipientContext, &cose);
+        if(seq_result != 0){
+          PRINTF("SEQ Error!\n");
+          return seq_result; 
         }
-    	  create_iv((uint8_t*)ctx->RecipientContext->RecipientIv, nonce,seq, seq_len);
-    		coap_pkt->context = ctx;
-    		OPT_COSE_SetNonce(&cose, nonce, CONTEXT_INIT_VECT_LEN); 
-  	}
+        seq = OPT_COSE_GetPartialIV(&cose, &seq_len);
+    } else { //Reply
+        uint32_t sequence_numer = get_seq_from_token(coap_pkt->token, coap_pkt->token_len);
+        if(! IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){
+          remove_seq_from_token(coap_pkt->token, coap_pkt->token_len);
+        }
+        printf("retreived seq %" PRIu32 "\n from token: ", sequence_numer);
+        oscoap_printf_hex(coap_pkt->token, coap_pkt->token_len);
+        seq_len = to_bytes(sequence_numer, seq_buffer);
+        seq = seq_buffer;
+        printf("seq bytes\n");
+        oscoap_printf_hex(seq, seq_len);
+        OPT_COSE_SetPartialIV(&cose, seq, seq_len);
+    }
+    
+    create_iv((uint8_t*)ctx->RecipientContext->RecipientIv, nonce,seq, seq_len);
+    if( (!IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)) && coap_is_request(coap_pkt)){ 
+      //Non observe reply
+      nonce[0] = nonce[0] ^ (1 << 7);
+    }
+    coap_pkt->context = ctx;
+    OPT_COSE_SetNonce(&cose, nonce, CONTEXT_INIT_VECT_LEN); 
+  	
 
    
     OPT_COSE_SetAlg(&cose, COSE_Algorithm_AES_CCM_64_64_128);
