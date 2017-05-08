@@ -134,8 +134,29 @@ PROCESS_THREAD(er_example_client, ev, data)
     
   oscoap_ctx_store_init();
   init_token_seq_store();
-  
+ /* uint8_t t1 = {0xa1};
+  uint8_t t2 = {0xa2};
+  uint8_t t3 = {0xa3};
+  uint8_t t4 = {0xa4};
+  uint8_t t5 = {0xa5};
 
+  set_seq_from_token(&t1, 1, 1);
+  set_seq_from_token(&t2, 1, 2);
+  set_seq_from_token(&t3, 1, 3);
+  set_seq_from_token(&t4, 1, 4);
+  set_seq_from_token(&t5, 1, 5);
+
+  remove_seq_from_token(&t1, 1);
+
+  printf("255: %d\n", get_seq_from_token(&t1, 1));
+  printf("2: %d\n", get_seq_from_token(&t2, 1));
+  remove_seq_from_token(&t3, 1);
+  printf("2: %d\n", get_seq_from_token(&t2, 1));
+  printf("4: %d\n", get_seq_from_token(&t4, 1));
+  printf("5: %d\n", get_seq_from_token(&t5, 1));
+  printf("1: %d\n", get_seq_from_token(&t1, 1));
+  remove_seq_from_token(&t5, 1);
+  printf("4: %d\n", get_seq_from_token(&t4, 1)); */
 	if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
   	printf("Error: Could not create new Context!\n");
 	}

@@ -301,8 +301,22 @@ int oscoap_free_ctx(OscoapCommonContext *ctx){
     return ret;
 }
 
+/*
+void list_init(list_t list); // Initialize a list.
+void *list_head(list_t list); // Get a pointer to the first item of a list.
+void *list_tail(list_t list); // Get the tail of a list. 
+void *list_item_next(void *item); // Get the next item of a list. 
+int list_length(list_t list); // Get the length of a list. 
+void list_push(list_t list, void *item); // Add an item to the start of the list.
+void list_add(list_t list, void *item); // Add an item at the end of a list.
+void list_insert(list_t list, void *previtem, void *newitem); // Insert an item after a specified item on the list. 
+void *list_pop(list_t list); // Remove the first object on a list. 
+void *list_chop(list_t list); // Remove the last object on the list. 
+void list_remove(list_t list, void *item); // Remove a specific element from a list.
+*/
 void init_token_seq_store(){
   memb_init(&token_seq);
+  //list_init(list_t list);
 }
 
 uint32_t get_seq_from_token(uint8_t* token, uint8_t token_len){
@@ -329,19 +343,34 @@ uint32_t get_seq_from_token(uint8_t* token, uint8_t token_len){
 }
 
 void remove_seq_from_token(uint8_t* token, uint8_t token_len){
-   TokenSeq* ptr = token_seq_store;
+  TokenSeq* ptr = token_seq_store;
 
-   uint8_t cmp_len = MIN(token_len, ptr->TokenLen);
-
-  while(memcmp(ptr->Token, token, cmp_len) != 0){
-    if(ptr == NULL){
-      return 255;
-    }
-    cmp_len = MIN(token_len, ptr->TokenLen);
+  uint8_t cmp_len = MIN(token_len, ptr->TokenLen);
+  if(memcmp(ptr->Token, token, cmp_len) == 0){ // first element
+    token_seq_store = ptr->Next;
+    memb_free(&token_seq, ptr);
+    return;
   }
 
-//  ptr->next
-  memb_free(&token_seq, ptr);
+  ptr = ptr->Next;
+  
+  while(1){
+    if(ptr == NULL){
+      return;
+    }
+    cmp_len = MIN(token_len, ptr->Next->TokenLen);
+    if(memcmp(ptr->Next->Token, token, cmp_len) == 0){
+      TokenSeq* tmp = ptr->Next;
+      ptr->Next = ptr->Next->Next;
+      memb_free(&token_seq, tmp);
+      return;
+    }
+
+    ptr = ptr->Next;
+    
+  }
+
+
 }
 
 uint8_t set_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t seq){

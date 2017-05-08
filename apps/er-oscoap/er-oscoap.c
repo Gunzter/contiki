@@ -449,6 +449,9 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
           seq = OPT_COSE_GetPartialIV(&cose, &seq_len);
         } else { //Reply
           uint32_t sequence_numer = get_seq_from_token(coap_pkt->token, coap_pkt->token_len);
+          if(! IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){
+            remove_seq_from_token(coap_pkt->token, coap_pkt->token_len);
+          }
           printf("retreived seq %" PRIu32 "\n from token: ", sequence_numer);
           oscoap_printf_hex(coap_pkt->token, coap_pkt->token_len);
           seq_len = to_bytes(sequence_numer, seq_buffer);
