@@ -129,7 +129,7 @@ coap_receive(void)
       	    if(message->context != NULL){
 //			PRINTF("2 Setting OSCOAP on response with CID: %d\n", message->context->ContextId);
 		    	response->context = message->context;
-			coap_set_header_object_security(response);	
+			   coap_set_header_object_security(response);	
 	    }            /* mirror token */
           } if(message->token_len) {
             coap_set_token(response, message->token, message->token_len);

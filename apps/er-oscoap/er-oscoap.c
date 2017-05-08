@@ -437,7 +437,8 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     if(ctx == NULL){	
   		  PRINTF("context is not fetched form DB kid: ");
         PRINTF_HEX(cose.kid, cose.kid_len);
-        return OSCOAP_CONTEXT_NOT_FOUND;
+        coap_error_message = "Security context not found";
+        return UNAUTHORIZED_4_01;
   	}
         size_t seq_len;
         uint8_t *seq;
@@ -499,7 +500,8 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     if(OPT_COSE_Decrypt(&cose, ctx->RecipientContext->RecipientKey, CONTEXT_KEY_LEN)){
       roll_back(ctx->RecipientContext);
       PRINTF("Error: Crypto Error!\n");
-      return OSCOAP_CRYPTO_ERROR;
+      coap_error_message = "Decryption failed";
+      return BAD_REQUEST_4_00;
     }
 
     PRINTF("PLAINTEXT DECRYPTED len %d\n", cose.plaintext_len);
