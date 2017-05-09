@@ -198,13 +198,13 @@ oscoap_ctx_store_init();
 //Interop
 
 
-//if(oscoap_derrive_ctx(master_secret, 35, NULL, 0, 12, 1,sender_id, 6, receiver_id, 6, 32) == 0) {
-//  printf("Error: Could not derive new Context!\n");
-//}
-
-if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
-  printf("Error: Could not create new Context!\n");
+if(oscoap_derrive_ctx(master_secret, 35, NULL, 0, 12, 1,sender_id, 6, receiver_id, 6, 32) == 0) {
+  printf("Error: Could not derive new Context!\n");
 }
+
+//if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
+//  printf("Error: Could not create new Context!\n");
+//}
 
 
 OscoapCommonContext* c = NULL;

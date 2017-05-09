@@ -49,7 +49,7 @@ static void res_get_handler(void *request, void *response, uint8_t *buffer, uint
  * If a smaller block size is requested for CoAP, the REST framework automatically splits the data.
  */
 RESOURCE(res_hello2,
-         "title=\"Hello world: ?len=0..\";rt=\"Text\"",
+         "title=\"Hello world2: ?len=0..\";rt=\"Text\"",
          res_get_handler,
          NULL,
          NULL,
