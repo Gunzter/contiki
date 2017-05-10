@@ -99,7 +99,9 @@ coap_receive(void)
              message->type, message->token_len, message->code, message->mid);
       PRINTF("  URL: %.*s\n", message->uri_path_len, message->uri_path);
       PRINTF("  Payload: %.*s\n", message->payload_len, message->payload);
-
+      if(IS_OPTION(message, COAP_OPTION_OBJECT_SECURITY)){
+         coap_set_header_object_security(response); 
+      }
       /* handle requests */
       if(message->code >= COAP_GET && message->code <= COAP_DELETE) {
 
@@ -120,17 +122,16 @@ coap_receive(void)
       	    if(message->context != NULL){
 			 //      PRINTF("1 Setting OSCOAP on response with CID: %d\n", message->context->ContextId);
 		    	   response->context = message->context;
-			       coap_set_header_object_security(response);	
+			      
 	         }
 	  } else {
             /* unreliable NON requests are answered with a NON as well */
             coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
                               coap_get_mid());
       	    if(message->context != NULL){
-//			PRINTF("2 Setting OSCOAP on response with CID: %d\n", message->context->ContextId);
-		    	response->context = message->context;
-			   coap_set_header_object_security(response);	
-	    }            /* mirror token */
+		    	     response->context = message->context;
+	          }
+                        /* mirror token */
           } if(message->token_len) {
             coap_set_token(response, message->token, message->token_len);
             /* get offset for blockwise transfers */
@@ -303,9 +304,7 @@ coap_receive(void)
       coap_init_message(message, reply_type, erbium_status_code,
                         message->mid);
       if(message->context != NULL){
-//		PRINTF("3 Setting OSCOAP on response with CID: %d\n", message->context->ContextId);
 	    	response->context = message->context;
-		coap_set_header_object_security(response);	
       }
       coap_set_payload(message, coap_error_message,
                        strlen(coap_error_message));
