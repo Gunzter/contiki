@@ -36,16 +36,12 @@
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
- /*
-      Modified for OSCOAP test implementation by: Martin Gunnarsson martin.gunnarsson@sics.se and Joakim Brorsson b.joakim@gmail.com
- */
-
-
 #include "sys/cc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "er-coap-engine.h"
+#include "er-coap.h"
 
 #define DEBUG 1
 #if DEBUG
@@ -89,20 +85,18 @@ coap_receive(void)
     PRINTF(":%u\n  Length: %u\n", uip_ntohs(UIP_UDP_BUF->srcport),
            uip_datalen());
 
-    //erbium_status_code =
-    //  coap_parse_message(message, uip_appdata, uip_datalen());
-    erbium_status_code = oscoap_parser(message, uip_appdata, uip_datalen(), ROLE_COAP);
-    
+    erbium_status_code =
+     oscoap_parser(message, uip_appdata, uip_datalen(), ROLE_COAP);
+
     if(erbium_status_code == NO_ERROR) {
+
       /*TODO duplicates suppression, if required by application */
+
       PRINTF("  Parsed: v %u, t %u, tkl %u, c %u, mid %u\n", message->version,
              message->type, message->token_len, message->code, message->mid);
       PRINTF("  URL: %.*s\n", message->uri_path_len, message->uri_path);
       PRINTF("  Payload: %.*s\n", message->payload_len, message->payload);
-      if(IS_OPTION(message, COAP_OPTION_OBJECT_SECURITY)){
-         coap_set_header_object_security(response); 
-         response->context = message->context;
-      }
+
       /* handle requests */
       if(message->code >= COAP_GET && message->code <= COAP_DELETE) {
 
@@ -120,19 +114,11 @@ coap_receive(void)
             /* reliable CON requests are answered with an ACK */
             coap_init_message(response, COAP_TYPE_ACK, CONTENT_2_05,
                               message->mid);
-      	  //  if(message->context != NULL){
-			 //      PRINTF("1 Setting OSCOAP on response with CID: %d\n", message->context->ContextId);
-		    	  //  coap_set_header_object_security....
-            //  response->context = message->context;
-			    //  }
-	  } else {
+          } else {
             /* unreliable NON requests are answered with a NON as well */
             coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
                               coap_get_mid());
-      	  //  if(message->context != NULL){
-		    	//     response->context = message->context;
-	        //  }
-                        /* mirror token */
+            /* mirror token */
           } if(message->token_len) {
             coap_set_token(response, message->token, message->token_len);
             /* get offset for blockwise transfers */
@@ -259,7 +245,9 @@ coap_receive(void)
           /* free transaction memory before callback, as it may create a new transaction */
           restful_response_handler callback = transaction->callback;
           void *callback_data = transaction->callback_data;
+
           coap_clear_transaction(transaction);
+
           /* check if someone registered for the response */
           if(callback) {
             callback(callback_data, message);
@@ -269,12 +257,12 @@ coap_receive(void)
         transaction = NULL;
 
 #if COAP_OBSERVE_CLIENT
-	/* if observe notification */
+        /* if observe notification */
         if((message->type == COAP_TYPE_CON || message->type == COAP_TYPE_NON)
-              && IS_OPTION(message, COAP_OPTION_OBSERVE)) {
-          //PRINTF("Observe [%u]\n", message->observe);
+           && IS_OPTION(message, COAP_OPTION_OBSERVE)) {
+          PRINTF("Observe [%u]\n", message->observe);
           coap_handle_notification(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
-              message);
+                                   message);
         }
 #endif /* COAP_OBSERVE_CLIENT */
       } /* request or response */
@@ -304,9 +292,6 @@ coap_receive(void)
       }
       coap_init_message(message, reply_type, erbium_status_code,
                         message->mid);
-      //if(message->context != NULL){
-	    //	response->context = message->context;
-      //}
       coap_set_payload(message, coap_error_message,
                        strlen(coap_error_message));
       coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
@@ -404,7 +389,6 @@ PT_THREAD(coap_blocking_request
   block_error = 0;
 
   do {
-    request->ipaddr = remote_ipaddr;
     request->mid = coap_get_mid();
     if((state->transaction = coap_new_transaction(request->mid, remote_ipaddr,
                                                   remote_port))) {
@@ -429,7 +413,7 @@ PT_THREAD(coap_blocking_request
         PRINTF("Server not responding\n");
         PT_EXIT(&state->pt);
       }
-     
+
       coap_get_header_block2(state->response, &res_block, &more, NULL, NULL);
 
       PRINTF("Received #%lu%s (%u bytes)\n", res_block, more ? "+" : "",
@@ -437,7 +421,6 @@ PT_THREAD(coap_blocking_request
 
       if(res_block == state->block_num) {
         request_callback(state->response);
-
         ++(state->block_num);
       } else {
         PRINTF("WRONG BLOCK %lu/%lu\n", res_block, state->block_num);

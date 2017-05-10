@@ -212,6 +212,7 @@ coap_receive(void)
                                                                    transaction->
                                                                    packet)) ==
                  0) {
+                printf("DEBUF serialize ERROR\n");
                 erbium_status_code = PACKET_SERIALIZATION_ERROR;
               }
             }
@@ -296,6 +297,7 @@ coap_receive(void)
       coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
                         uip_appdata, coap_serialize_message(message,
                                                             uip_appdata));
+      printf("DEBUG after serialize\n");
     }
   }
 

@@ -51,7 +51,7 @@
 #include "er-coap-transactions.h"
 #include "er-oscoap.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -331,7 +331,9 @@ coap_serialize_message(void *packet, uint8_t *buffer){
     }else{
 	     printf("sending COAP\n");
 	    // return coap_serialize_message_coap(packet, buffer); 
-       return oscoap_serializer(packet, buffer, ROLE_COAP);
+       size_t s = oscoap_serializer(packet, buffer, ROLE_COAP);
+        oscoap_printf_hex(buffer, s);
+        return s;
     }
 }
 
@@ -456,17 +458,19 @@ void
 coap_send_message(uip_ipaddr_t *addr, uint16_t port, uint8_t *data,
                   uint16_t length)
 {
+  printf("begin send coap\n");
   /* configure connection to reply to client */
   uip_ipaddr_copy(&udp_conn->ripaddr, addr);
   udp_conn->rport = port;
-
+  printf("begin send uip\n");
   uip_udp_packet_send(udp_conn, data, length);
-
+  printf("end send uip\n");
   PRINTF("-sent UDP datagram (%u)-\n", length);
 
   /* restore server socket to allow data from any node */
   memset(&udp_conn->ripaddr, 0, sizeof(udp_conn->ripaddr));
   udp_conn->rport = 0;
+  printf("end send coap\n");
 }
 /*---------------------------------------------------------------------------*/
 /*

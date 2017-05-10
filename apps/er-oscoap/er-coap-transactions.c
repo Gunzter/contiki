@@ -41,7 +41,7 @@
 #include "er-coap-transactions.h"
 #include "er-coap-observe.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -92,10 +92,7 @@ coap_send_transaction(coap_transaction_t *t)
   PRINTF("Sending transaction %u\n", t->mid);
 
   coap_send_message(&t->addr, t->port, t->packet, t->packet_len);
-  printf("tramsaction, addr, port, len\n");
-  oscoap_printf_hex(&t->addr, 16);
-  printf("%d\n", t->port);
-  printf("%d\n",t->packet_len );
+
   if(COAP_TYPE_CON ==
      ((COAP_HEADER_TYPE_MASK & t->packet[0]) >> COAP_HEADER_TYPE_POSITION)) {
     if(t->retrans_counter < COAP_MAX_RETRANSMIT) {
@@ -137,7 +134,6 @@ coap_send_transaction(coap_transaction_t *t)
       }
     }
   } else {
-    printf("DEBUG the else transaction\n");
     coap_clear_transaction(t);
   }
 }
@@ -151,7 +147,6 @@ coap_clear_transaction(coap_transaction_t *t)
     etimer_stop(&t->retrans_timer);
     list_remove(transactions_list, t);
     memb_free(&transactions_memb, t);
-    printf("DEBUG end free transaction\n");
   }
 }
 coap_transaction_t *
