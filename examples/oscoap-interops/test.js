@@ -2,10 +2,14 @@
  log.log("first simulation message at time : " + time + "\n");
  //import Java Package to JavaScript
  //importPackage(java.io);
- 
+while (true) {
+   log.log(time + ":" + id + ":" + msg + "\n");
+   YIELD();
+}
  // Use JavaScript object as an associative array
- outputs = new Object();
- 
+// outputs = new Object();
+
+/* 
  while (true) {
  	//Has the output file been created.
  	if(! outputs[id.toString()]){
@@ -29,3 +33,4 @@
  		throw('test script killed');
  	}
  }
+*/

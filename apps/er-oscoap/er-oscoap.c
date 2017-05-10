@@ -43,7 +43,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include "cose-compression.h"
 
-#define DEBUG 0
+#define DEBUG 1 
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -106,7 +106,7 @@ size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* 
   ret += OPT_CBOR_put_unsigned(&buffer, 1); //version is always 1
   ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->code)); //COAP code is one byte //TODO should be
   uint32_t obs;
-  if(coap_is_request(coap_pkt)){
+  if(coap_is_request(coap_pkt) && IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){ //TODO make this roboust by fixing the serializer
     int s = coap_get_header_observe(coap_pkt, &obs);
     printf("observe s = %d obs = %" PRIu32 "\n", s, obs);
     protected_len = oscoap_serializer(coap_pkt, protected_buffer, ROLE_PROTECTED);
@@ -318,7 +318,7 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   oscoap_printf_hex(seq_buffer, seq_bytes_len);
   oscoap_printf_hex(coap_pkt->context->SenderContext->SenderIv, 7);
   create_iv((uint8_t*)coap_pkt->context->SenderContext->SenderIv, nonce_buffer, seq_buffer, seq_bytes_len);
-  if( (!IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)) && coap_is_request(coap_pkt)){ 
+  if( (!IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)) && (!coap_is_request(coap_pkt))){ 
     //Non observe reply
     nonce_buffer[0] = nonce_buffer[0] ^ (1 << 7);
   }
@@ -448,7 +448,9 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
         uint8_t seq_result = oscoap_validate_receiver_seq(ctx->RecipientContext, &cose);
         if(seq_result != 0){
           PRINTF("SEQ Error!\n");
-          return seq_result; 
+          coap_error_message = "Sequence number trouble";
+	  return BAD_REQUEST_4_00;
+	 // return seq_result; 
         }
         seq = OPT_COSE_GetPartialIV(&cose, &seq_len);
     } else { //Reply
@@ -466,7 +468,7 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     }
     
     create_iv((uint8_t*)ctx->RecipientContext->RecipientIv, nonce,seq, seq_len);
-    if( (!IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)) && coap_is_request(coap_pkt)){ 
+    if( (!IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)) && (!coap_is_request(coap_pkt))){ 
       //Non observe reply
       nonce[0] = nonce[0] ^ (1 << 7);
     }
