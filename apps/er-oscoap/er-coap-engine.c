@@ -101,6 +101,7 @@ coap_receive(void)
       PRINTF("  Payload: %.*s\n", message->payload_len, message->payload);
       if(IS_OPTION(message, COAP_OPTION_OBJECT_SECURITY)){
          coap_set_header_object_security(response); 
+         response->context = message->context;
       }
       /* handle requests */
       if(message->code >= COAP_GET && message->code <= COAP_DELETE) {
@@ -119,18 +120,18 @@ coap_receive(void)
             /* reliable CON requests are answered with an ACK */
             coap_init_message(response, COAP_TYPE_ACK, CONTENT_2_05,
                               message->mid);
-      	    if(message->context != NULL){
+      	  //  if(message->context != NULL){
 			 //      PRINTF("1 Setting OSCOAP on response with CID: %d\n", message->context->ContextId);
-		    	   response->context = message->context;
-			      
-	         }
+		    	  //  coap_set_header_object_security....
+            //  response->context = message->context;
+			    //  }
 	  } else {
             /* unreliable NON requests are answered with a NON as well */
             coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
                               coap_get_mid());
-      	    if(message->context != NULL){
-		    	     response->context = message->context;
-	          }
+      	  //  if(message->context != NULL){
+		    	//     response->context = message->context;
+	        //  }
                         /* mirror token */
           } if(message->token_len) {
             coap_set_token(response, message->token, message->token_len);
@@ -303,9 +304,9 @@ coap_receive(void)
       }
       coap_init_message(message, reply_type, erbium_status_code,
                         message->mid);
-      if(message->context != NULL){
-	    	response->context = message->context;
-      }
+      //if(message->context != NULL){
+	    //	response->context = message->context;
+      //}
       coap_set_payload(message, coap_error_message,
                        strlen(coap_error_message));
       coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,

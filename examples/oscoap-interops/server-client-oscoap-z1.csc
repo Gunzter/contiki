@@ -24,9 +24,9 @@
       org.contikios.cooja.mspmote.Z1MoteType
       <identifier>z11</identifier>
       <description>c</description>
-      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-client.c</source>
+      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-interops/er-example-client.c</source>
       <commands EXPORT="discard">make er-example-client.z1 TARGET=z1</commands>
-      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-client.z1</firmware>
+      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-interops/er-example-client.z1</firmware>
       <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.RimeAddress</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.IPAddress</moteinterface>
@@ -64,9 +64,9 @@
       org.contikios.cooja.mspmote.Z1MoteType
       <identifier>z13</identifier>
       <description>s</description>
-      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-server.c</source>
+      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-interops/er-example-server.c</source>
       <commands EXPORT="discard">make er-example-server.z1 TARGET=z1</commands>
-      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-server.z1</firmware>
+      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-interops/er-example-server.z1</firmware>
       <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.RimeAddress</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.IPAddress</moteinterface>
