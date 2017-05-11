@@ -42,7 +42,7 @@
 #include "er-oscoap.h"
 #include "er-coap.h"
 
-static void res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+static void res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
 /*
  * A handler function named [resource name]_handler must be implemented for each RESOURCE.
@@ -50,21 +50,23 @@ static void res_get_handler(void *request, void *response, uint8_t *buffer, uint
  * preferred_size and offset, but must respect the REST_MAX_CHUNK_SIZE limit for the buffer.
  * If a smaller block size is requested for CoAP, the REST framework automatically splits the data.
  */
-RESOURCE(res_hello3,
-         "title=\"Hello world3: ?len=0..\";rt=\"Text\"",
-         res_get_handler,
+RESOURCE(res_hello6,
+         "title=\"Hello world6: ?len=0..\";rt=\"Text\"",
          NULL,
          NULL,
+         res_put_handler,
          NULL);
 
+static uint8_t val = 1;
+
 static void
-res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-  const char *len = NULL;
+  //const char *len = NULL;
   printf("res handler\n");
   /* Some data that has the length up to REST_MAX_CHUNK_SIZE. For more, see the chunk resource. */
-  char const *const message = "Hello World! ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy";
-  int length = 12; /*          |<-------->| */
+  uint8_t message[3];
+  int length = sprintf(message,"%d", val);
  coap_packet_t* coap_request = (coap_packet_t*)request;
   if(IS_OPTION(coap_request, COAP_OPTION_OBJECT_SECURITY)){
     coap_packet_t* coap_response = (coap_packet_t*)response;
@@ -76,18 +78,9 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     printf("TODO SEND ERRORS!\n");
   }
   /* The query string can be retrieved by rest_get_query() or parsed for its key-value pairs. */
-  if(REST.get_query_variable(request, "len", &len)) {
-    length = atoi(len);
-    if(length < 0) {
-      length = 0;
-    }
-    if(length > REST_MAX_CHUNK_SIZE) {
-      length = REST_MAX_CHUNK_SIZE;
-    }
-    memcpy(buffer, message, length);
-  } else {
-    memcpy(buffer, message, length);
-  } REST.set_header_content_type(response, REST.type.TEXT_PLAIN); /* text/plain is the default, hence this option could be omitted. */
+
+  memcpy(buffer, message, length);
+  REST.set_header_content_type(response, REST.type.TEXT_PLAIN); /* text/plain is the default, hence this option could be omitted. */
   REST.set_header_max_age(response, 5);
   REST.set_response_payload(response, buffer, length);
 }

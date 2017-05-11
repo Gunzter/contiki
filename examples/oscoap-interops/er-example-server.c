@@ -70,6 +70,7 @@ extern resource_t
   res_hello1,
   res_hello2,
   res_hello3,
+  res_hello6,
   res_mirror,
   res_chunks,
   res_separate,
@@ -174,6 +175,7 @@ PROCESS_THREAD(er_example_server, ev, data)
   rest_activate_resource(&res_hello1, "hello/1");
   rest_activate_resource(&res_hello2, "hell/2");
   rest_activate_resource(&res_hello3, "hello/3");
+  rest_activate_resource(&res_hello6, "hello/6");
 /*  rest_activate_resource(&res_mirror, "debug/mirror"); */
 /*  rest_activate_resource(&res_chunks, "test/chunks"); */
 /*  rest_activate_resource(&res_separate, "test/separate"); */
