@@ -458,19 +458,16 @@ void
 coap_send_message(uip_ipaddr_t *addr, uint16_t port, uint8_t *data,
                   uint16_t length)
 {
-  printf("begin send coap\n"); //utan den 
   /* configure connection to reply to client */
   uip_ipaddr_copy(&udp_conn->ripaddr, addr);
   udp_conn->rport = port;
-  printf("begin send uip\n");
+
   uip_udp_packet_send(udp_conn, data, length);
-  printf("end send uip\n");
   PRINTF("-sent UDP datagram (%u)-\n", length);
 
   /* restore server socket to allow data from any node */
   memset(&udp_conn->ripaddr, 0, sizeof(udp_conn->ripaddr));
   udp_conn->rport = 0;
-  printf("end send coap\n");
 }
 /*---------------------------------------------------------------------------*/
 /*
