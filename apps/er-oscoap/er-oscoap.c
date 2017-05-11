@@ -217,7 +217,7 @@ uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encry
             
   } else if (incomming_seq == ctx->LastSeq) {
      // Special case since we do not use unisgned int for seq
-     if(ctx->InitialState == 1 && incomming_seq == 0){
+     if(ctx->InitialState == 1 ){ //&& incomming_seq == 0
         ctx->InitialState = 0;
         int shift = incomming_seq - ctx->LastSeq;
         ctx->SlidingWindow = ctx->SlidingWindow << shift;
@@ -440,15 +440,15 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
         coap_error_message = "Security context not found";
         return UNAUTHORIZED_4_01;
   	}
-        size_t seq_len;
-        uint8_t *seq;
-
+    
+    size_t seq_len;
+    uint8_t *seq;
 
     if(coap_is_request(coap_pkt)){  //TODO add check to se that we do not have observe to
         uint8_t seq_result = oscoap_validate_receiver_seq(ctx->RecipientContext, &cose);
         if(seq_result != 0){
           PRINTF("SEQ Error!\n");
-          coap_error_message = "Sequence number trouble";
+          coap_error_message = "Replay protection failed";
 	  return BAD_REQUEST_4_00;
 	 // return seq_result; 
         }
