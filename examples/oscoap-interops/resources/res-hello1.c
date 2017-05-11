@@ -39,6 +39,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "rest-engine.h"
+#include "er-oscoap.h"
+#include "er-coap.h"
 
 static void res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
@@ -63,7 +65,15 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   /* Some data that has the length up to REST_MAX_CHUNK_SIZE. For more, see the chunk resource. */
   char const *const message = "Hello World! ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy";
   int length = 12; /*          |<-------->| */
-
+  coap_packet_t* coap_request = (coap_packet_t*)request;
+  if(IS_OPTION(coap_request, COAP_OPTION_OBJECT_SECURITY)){
+    coap_packet_t* coap_response = (coap_packet_t*)response;
+    coap_response->context = coap_request->context;
+    coap_set_header_object_security(coap_response);
+    printf("OSCOAP!\n");
+  }else {
+    printf("NOT OSCOAP\n");
+  }
   /* The query string can be retrieved by rest_get_query() or parsed for its key-value pairs. */
   if(REST.get_query_variable(request, "len", &len)) {
     length = atoi(len);
@@ -76,6 +86,7 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     memcpy(buffer, message, length);
   } else {
     memcpy(buffer, message, length);
-  } REST.set_header_content_type(response, REST.type.TEXT_PLAIN); /* text/plain is the default, hence this option could be omitted. */
+  }
+  REST.set_header_content_type(response, REST.type.TEXT_PLAIN); /* text/plain is the default, hence this option could be omitted. */
   REST.set_response_payload(response, buffer, length);
 }
