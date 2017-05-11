@@ -25,9 +25,9 @@
       org.contikios.cooja.mspmote.WismoteMoteType
       <identifier>z11</identifier>
       <description>c</description>
-      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-client.c</source>
-      <commands EXPORT="discard">make er-example-client.wismote TARGET=wismote TARGET_MEMORY_MODEL=large</commands>
-      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-client.wismote</firmware>
+      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-interops/er-example-client.c</source>
+      <commands EXPORT="discard">make er-example-client.wismote TARGET=wismote TARGET_MEMORY_MODEL=large V=1</commands>
+      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-interops/er-example-client.wismote</firmware>
       <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.RimeAddress</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.IPAddress</moteinterface>
@@ -65,9 +65,9 @@
       org.contikios.cooja.mspmote.WismoteMoteType
       <identifier>z13</identifier>
       <description>s</description>
-      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-server.c</source>
-      <commands EXPORT="discard">make er-example-server.wismote TARGET=wismote TAGET_MEMORY_MODEL=large</commands>
-      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-server.wismote</firmware>
+      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-interops/er-example-server.c</source>
+      <commands EXPORT="discard">make er-example-server.wismote TARGET=wismote TAGET_MEMORY_MODEL=large V=1</commands>
+      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-interops/er-example-server.wismote</firmware>
       <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.RimeAddress</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.IPAddress</moteinterface>
@@ -203,19 +203,6 @@
     <height>1091</height>
     <location_x>403</location_x>
     <location_y>4</location_y>
-  </plugin>
-  <plugin>
-    org.contikios.cooja.mspmote.plugins.MspCodeWatcher
-    <mote_arg>1</mote_arg>
-    <plugin_config>
-      <tab>0</tab>
-      <rule from="/cygdrive/c/" to="c:/" />
-    </plugin_config>
-    <width>750</width>
-    <z>4</z>
-    <height>500</height>
-    <location_x>731</location_x>
-    <location_y>436</location_y>
   </plugin>
   <plugin>
     org.contikios.cooja.mspmote.plugins.MspStackWatcher

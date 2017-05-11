@@ -302,3 +302,4 @@ endif
 # command in order to be a rule, not just a prerequisite.
 %: %.$(TARGET)
 	@
+

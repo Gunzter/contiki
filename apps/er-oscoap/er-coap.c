@@ -458,7 +458,7 @@ void
 coap_send_message(uip_ipaddr_t *addr, uint16_t port, uint8_t *data,
                   uint16_t length)
 {
-  printf("begin send coap\n");
+  printf("begin send coap\n"); //utan den 
   /* configure connection to reply to client */
   uip_ipaddr_copy(&udp_conn->ripaddr, addr);
   udp_conn->rport = port;

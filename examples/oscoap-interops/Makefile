@@ -12,6 +12,14 @@ CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 #For that extra special touch :) 
 #CFLAGS += -Wall -Wextra -Wunused-function  
 
+#hotfix for wismote
+#ifeq ($(TARGET_MEMORY_MODEL),large)
+#  CFLAGS += -mmemory-model=$(TARGET_MEMORY_MODEL)
+#  CFLAGS += -mcode-region=far -mdata-region=far -msr20 -mc20 -md20
+#  LDFLAGS += -mmemory-model=$(TARGET_MEMORY_MODEL) -mcode-region=far -mdata-region=far -msr20 -mc20 -md20
+#endif
+
+
 # automatically build RESTful resources
 REST_RESOURCES_DIR = ./resources
 ifndef TARGET
