@@ -45,9 +45,9 @@
       org.contikios.cooja.mspmote.WismoteMoteType
       <identifier>server</identifier>
       <description>Erbium Server</description>
-      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-server.c</source>
+      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-interops/er-example-server.c</source>
       <commands EXPORT="discard">make er-example-server.wismote TARGET=wismote TARGET_MEMORY_MODEL=large</commands>
-      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-server.wismote</firmware>
+      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-interops/er-example-server.wismote</firmware>
       <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.RimeAddress</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.IPAddress</moteinterface>
@@ -65,9 +65,9 @@
       org.contikios.cooja.mspmote.WismoteMoteType
       <identifier>client</identifier>
       <description>Erbium Client</description>
-      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-observe-client.c</source>
+      <source EXPORT="discard">[CONTIKI_DIR]/examples/oscoap-interops/er-example-observe-client.c</source>
       <commands EXPORT="discard">make er-example-observe-client.wismote TARGET=wismote TARGET_MEMORY_MODEL=large</commands>
-      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-cooja/er-example-observe-client.wismote</firmware>
+      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/oscoap-interops/er-example-observe-client.wismote</firmware>
       <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.RimeAddress</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.IPAddress</moteinterface>
