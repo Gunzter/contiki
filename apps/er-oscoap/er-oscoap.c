@@ -328,6 +328,8 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
     OPT_COSE_SetKeyID(&cose, coap_pkt->context->SenderContext->SenderId,
             coap_pkt->context->SenderContext->SenderIdLen);
     OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
+  } else if ( !coap_is_request(coap_pkt) && IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){
+	OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
   }
 
   size_t external_aad_size = oscoap_external_aad_size(coap_pkt); // this is a upper bound of the size
