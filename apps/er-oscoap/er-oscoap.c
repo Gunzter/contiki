@@ -149,7 +149,6 @@ size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* 
     
   return ret;
   
-
 }
 
 
