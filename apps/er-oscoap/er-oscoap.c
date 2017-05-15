@@ -106,7 +106,7 @@ size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* 
   ret += OPT_CBOR_put_unsigned(&buffer, 1); //version is always 1
   ret += OPT_CBOR_put_unsigned(&buffer, (coap_pkt->code)); //COAP code is one byte //TODO should be
   uint32_t obs;
-  if(coap_is_request(coap_pkt) && IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){ //TODO make this roboust by fixing the serializer
+  if(!coap_is_request(coap_pkt) && IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){ //TODO make this roboust by fixing the serializer
     int s = coap_get_header_observe(coap_pkt, &obs);
     PRINTF("observe s = %d obs = %" PRIu32 "\n", s, obs);
     protected_len = oscoap_serializer(coap_pkt, protected_buffer, ROLE_PROTECTED);
@@ -328,6 +328,8 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
     OPT_COSE_SetKeyID(&cose, coap_pkt->context->SenderContext->SenderId,
             coap_pkt->context->SenderContext->SenderIdLen);
     OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
+  } else if ( !coap_is_request(coap_pkt) && IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){
+	OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
   }
 
   size_t external_aad_size = oscoap_external_aad_size(coap_pkt); // this is a upper bound of the size
