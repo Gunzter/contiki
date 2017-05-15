@@ -454,7 +454,8 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
         }
         seq = OPT_COSE_GetPartialIV(&cose, &seq_len);
     } else { //Reply
-        uint32_t sequence_numer = get_seq_from_token(coap_pkt->token, coap_pkt->token_len);
+        uint32_t sequence_numer;
+        uint8_t rest = get_seq_from_token(coap_pkt->token, coap_pkt->token_len, &sequence_numer);
         if(! IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){
           remove_seq_from_token(coap_pkt->token, coap_pkt->token_len);
         }

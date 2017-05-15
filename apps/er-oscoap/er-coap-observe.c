@@ -241,8 +241,8 @@ coap_notify_observers_sub(resource_t *resource, const char *subpath)
         obs->last_mid = transaction->mid;
         printf("OBSERVE TOKEN!!!\n");
         oscoap_printf_hex(obs->token, obs->token_len);
-        uint32_t seq = get_seq_from_token(obs->token, obs->token_len);
-        if(seq != 255){
+        uint32_t seq;
+        if(get_seq_from_token(obs->token, obs->token_len, &seq)){
           OscoapCommonContext* ctx = oscoap_find_ctx_by_token(obs->token, obs->token_len);
           notification->context = ctx;
           coap_set_header_object_security(notification);

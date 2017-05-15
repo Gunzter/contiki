@@ -92,8 +92,9 @@ OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, uint8_t rid_len);
 OscoapCommonContext* oscoap_find_ctx_by_token(uint8_t* token, uint8_t token_len);
 
 void init_token_seq_store();
-uint32_t get_seq_from_token(uint8_t* token, uint8_t token_len);
+uint8_t get_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t* seq);
 uint8_t set_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t seq);
+void remove_seq_from_token(uint8_t* token, uint8_t token_len);
 
 int oscoap_free_ctx(OscoapCommonContext *ctx);
 

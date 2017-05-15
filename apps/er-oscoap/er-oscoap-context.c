@@ -319,7 +319,7 @@ void init_token_seq_store(){
   //list_init(list_t list);
 }
 
-uint32_t get_seq_from_token(uint8_t* token, uint8_t token_len){
+uint8_t get_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t* seq){
    TokenSeq* ptr = token_seq_store;
 
    uint8_t cmp_len = MIN(token_len, ptr->TokenLen);
@@ -328,17 +328,17 @@ uint32_t get_seq_from_token(uint8_t* token, uint8_t token_len){
     
     ptr = ptr->Next;
     if(ptr == NULL){
-      return 255; //TODO handle error
+      return 0; //TODO handle error
     }
 
     cmp_len = MIN(token_len, ptr->TokenLen);
   }
 
-  uint32_t seq = ptr->Seq;
+  *seq = ptr->Seq;
 
-  PRINTF("fetching seq %" PRIu32 "\n with token :", seq);
+  PRINTF("fetching seq %" PRIu32 "\n with token :", *seq);
   PRINTF_HEX(token, token_len);
-  return seq; 
+  return 1; 
 
 }
 
