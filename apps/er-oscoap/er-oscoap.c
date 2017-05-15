@@ -329,6 +329,8 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
             coap_pkt->context->SenderContext->SenderIdLen);
     OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
   } else if ( !coap_is_request(coap_pkt) && IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){
+	printf("setting seq for observe len %d \n", seq_bytes_len);
+	oscoap_printf_hex(seq_buffer, seq_bytes_len);
 	OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
   }
 
@@ -378,6 +380,9 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   } else {
         coap_set_header_object_security_content(packet, opt_buffer, serialized_len);     
   }
+  if(!coap_is_request(coap_pkt) && IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){
+      oscoap_increment_sender_seq(coap_pkt->context);
+  } 
   
 
   clear_options(coap_pkt);
