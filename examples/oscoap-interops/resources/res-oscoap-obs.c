@@ -78,7 +78,16 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   }
   REST.set_header_content_type(response, obs_format);
   REST.set_header_max_age(response, 5);
-
+  coap_packet_t* coap_request = (coap_packet_t*)request;
+  if(IS_OPTION(coap_request, COAP_OPTION_OBJECT_SECURITY)){
+    coap_packet_t* coap_response = (coap_packet_t*)response;
+    coap_response->context = coap_request->context;
+    coap_set_header_object_security(coap_response);
+    printf("OSCOAP!\n");
+  }else {
+    printf("NOT OSCOAP\n");
+    printf("TODO SEND ERRORS!\n");
+  }
   if(obs_content_len) {
     REST.set_header_content_type(response, obs_format);
     REST.set_response_payload(response, obs_content, obs_content_len);
