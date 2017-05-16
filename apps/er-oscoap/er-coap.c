@@ -1389,9 +1389,9 @@ oscoap_serializer(void *packet, uint8_t *buffer, uint8_t role)
                               content_format /* hack to get a zero field */,
                               "If-None-Match");
   }
-
-  COAP_SERIALIZE_INT_OPTION(COAP_OPTION_OBSERVE, observe, "Observe");
-  
+  if (role == ROLE_COAP || role == ROLE_PROTECTED  ){
+    COAP_SERIALIZE_INT_OPTION(COAP_OPTION_OBSERVE, observe, "Observe");
+  }
   if( role == ROLE_COAP || role == ROLE_PROTECTED ){
     COAP_SERIALIZE_INT_OPTION(COAP_OPTION_URI_PORT, uri_port, "Uri-Port");
   }
