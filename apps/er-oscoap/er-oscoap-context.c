@@ -145,6 +145,7 @@ OscoapCommonContext* oscoap_derrive_ctx(uint8_t* master_secret,uint8_t master_se
     recipient_ctx->RecipientId = rid;
     recipient_ctx->RecipientIdLen = rid_len;
     recipient_ctx->LastSeq = 0;
+    recipient_ctx->HighestSeq = 0;
     recipient_ctx->ReplayWindowSize = replay_window;
     recipient_ctx->RollbackLastSeq = 0;
     recipient_ctx->SlidingWindow = 0;
@@ -191,6 +192,7 @@ OscoapCommonContext* oscoap_new_ctx( uint8_t* sw_k, uint8_t* sw_iv, uint8_t* rw_
     recipient_ctx->RecipientId = r_id;
     recipient_ctx->RecipientIdLen = r_id_len;
     recipient_ctx->LastSeq = 0;
+    recipient_ctx->HighestSeq = 0;
     recipient_ctx->ReplayWindowSize = replay_window;
     recipient_ctx->RollbackLastSeq = 0;
     recipient_ctx->SlidingWindow = 0;

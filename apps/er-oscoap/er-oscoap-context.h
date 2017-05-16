@@ -38,6 +38,7 @@ struct OscoapSenderContext
 struct OscoapRecipientContext
 {
   uint32_t  LastSeq;
+  uint32_t  HighestSeq;
   uint32_t  SlidingWindow;
   uint32_t   RollbackSlidingWindow;
   uint32_t   RollbackLastSeq;
