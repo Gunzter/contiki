@@ -277,7 +277,7 @@ void roll_back(OscoapRecipientContext* ctx) {
 
 }
 
-
+uint32_t observe_seq = 0;
 
 size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
     
@@ -312,6 +312,7 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   if(coap_is_request(coap_pkt)){
     seq_bytes_len = to_bytes(coap_pkt->context->SenderContext->Seq, seq_buffer);
   } else {
+    /* TODO this is not the correct way, we must save the (in time last seq and return that) ctx->LastSeq should be ctx->HighestSeq */
     PRINTF("last seq %" PRIu32 "\n", coap_pkt->context->RecipientContext->LastSeq);
     seq_bytes_len = to_bytes(coap_pkt->context->RecipientContext->LastSeq, seq_buffer);
   }
@@ -332,7 +333,7 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
     OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
   } else if ( !coap_is_request(coap_pkt) && IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){
     //TODO Clean this up 
-  	seq_bytes_len = to_bytes(coap_pkt->context->SenderContext->Seq, seq_buffer);
+  	seq_bytes_len = to_bytes(observe_seq, seq_buffer);
     printf("setting seq for observe len %d \n", seq_bytes_len);
   	oscoap_printf_hex(seq_buffer, seq_bytes_len);
   	OPT_COSE_SetPartialIV(&cose, seq_buffer, seq_bytes_len);
@@ -384,9 +385,9 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   } else {
         coap_set_header_object_security_content(packet, opt_buffer, serialized_len);     
   }
-  if(!coap_is_request(coap_pkt) && IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){
-      oscoap_increment_sender_seq(coap_pkt->context);
-  } 
+ // if(!coap_is_request(coap_pkt) && IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE)){
+ //     oscoap_increment_sender_seq(coap_pkt->context);
+ // } 
   
 
   clear_options(coap_pkt);
@@ -476,6 +477,7 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
         PRINTF("seq bytes\n");
         PRINTF_HEX(seq, seq_len);
         OPT_COSE_SetPartialIV(&cose, seq, seq_len);
+    	observe_seq = sequence_number;
     }
     
     create_iv((uint8_t*)ctx->RecipientContext->RecipientIv, nonce,seq, seq_len);

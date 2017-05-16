@@ -53,7 +53,7 @@ PERIODIC_RESOURCE(res_oscoap_obs,
                   NULL,
                   res_put_handler,
                   res_delete_handler,
-                  2 * CLOCK_SECOND,
+                  10 * CLOCK_SECOND,
                   res_periodic_handler);
 
 static int32_t obs_counter = 0;
@@ -84,9 +84,14 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     coap_response->context = coap_request->context;
     coap_set_header_object_security(coap_response);
     printf("OSCOAP!\n");
-  }else {
-    printf("NOT OSCOAP\n");
-    printf("TODO SEND ERRORS!\n");
+  } else if (request == NULL) {
+	printf("request is null this might work\n");
+  } else {
+    coap_packet_t* coap_response = (coap_packet_t*)response;
+    coap_response->context = coap_request->context;
+    coap_set_header_object_security(coap_response);
+	
+    printf("NOT OSCOAP WE MAKE IT OSCOAP\n");
   }
   if(obs_content_len) {
     REST.set_header_content_type(response, obs_format);
