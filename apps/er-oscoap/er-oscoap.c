@@ -114,11 +114,9 @@ size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* 
 
   //TODO make this roboust by fixing the serializer
     if( sending == 1){
-      printf("observe seq: %lu\n", observe_seq);
       coap_set_header_observe(coap_pkt, observe_seq);// <=FUCK YOU!!!!
     } else {
       int s = coap_get_header_observe(coap_pkt, &obs);
-      printf("obs = %lu\n", coap_pkt->observe);
     }
     protected_len = oscoap_serializer(coap_pkt, protected_buffer, ROLE_PROTECTED);
     PRINTF("protected, len %d\n", protected_len);
@@ -154,15 +152,11 @@ size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* 
         ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
     } else {
         if( IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE) ){
-          printf("aad observe\n");
+;
           uint8_t seq_len = to_bytes(observing_seq, seq_buffer);
           ret += OPT_CBOR_put_bytes(&buffer, coap_pkt->context->SenderContext->SenderIdLen, coap_pkt->context->SenderContext->SenderId);
-          printf("seq len %d\n", seq_len);
-          oscoap_printf_hex(seq_buffer, seq_len);
-          printf("buffer ptr %p\n", buffer);
           ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
         } else {
-          printf("aad not observe\n");
     //    PRINTF("seq 2 2 %" PRIu64 "\n", coap_pkt->context->SenderContext->Seq);
           uint8_t seq_len = to_bytes(coap_pkt->context->SenderContext->Seq, seq_buffer);
           ret += OPT_CBOR_put_bytes(&buffer, coap_pkt->context->SenderContext->SenderIdLen, coap_pkt->context->SenderContext->SenderId);
@@ -422,7 +416,6 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   
   if(IS_OPTION(coap_pkt, COAP_OPTION_OBSERVE) && !coap_is_request(coap_pkt)){
       observe_seq++;
-      printf("incrementing observe seq, new= %lu", observe_seq);
   }
 
   /*TODO it is unclear what this does. old comment: break this to new function */
@@ -536,8 +529,7 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     uint8_t plaintext_buffer[plaintext_len];
     
     OPT_COSE_SetContent(&cose, plaintext_buffer, plaintext_len);
-  printf("4nonce after xor\n");
-  oscoap_printf_hex(nonce_buffer, 7);
+
     if(OPT_COSE_Decrypt(&cose, ctx->RecipientContext->RecipientKey, CONTEXT_KEY_LEN)){
       roll_back(ctx->RecipientContext);
       PRINTF("Error: Crypto Error!\n");
