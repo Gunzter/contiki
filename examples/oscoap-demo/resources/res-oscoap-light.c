@@ -56,7 +56,7 @@ PERIODIC_RESOURCE(res_oscoap_light,
                   NULL,
                   res_put_handler,
                   res_delete_handler,
-                  1 * CLOCK_SECOND,
+                  2 * CLOCK_SECOND,
                   res_periodic_handler);
 
 static int32_t obs_counter = 0;
