@@ -84,8 +84,8 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     coap_response->context = coap_request->context;
     coap_set_header_object_security(coap_response);
     printf("OSCOAP!\n");
-  } else if (request == NULL) {
-	printf("request is null this might work\n");
+  } else if (((coap_packet_t*)request)->context == NULL) {
+	printf("request context\n");
   } else {
     coap_packet_t* coap_response = (coap_packet_t*)response;
     coap_response->context = coap_request->context;
