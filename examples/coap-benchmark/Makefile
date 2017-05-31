@@ -1,4 +1,4 @@
-all: er-oscoap-server er-oscoap-client 
+all: er-coap-server er-coap-client  
 #er-coap-observe-client  er-oscoap-observe-client
 # use target "er-plugtest-server" explicitly when requried 
 
@@ -41,7 +41,7 @@ SMALL=1
 
 #CFLAGS += -Werror
 # REST Engine shall use Erbium CoAP implementation
-APPS += er-oscoap
+APPS += er-coap
 APPS += rest-engine
 
 # optional rules to get assembly

@@ -78,10 +78,10 @@ uip_ipaddr_t server_ipaddr;
 static struct etimer et;
 
 /* Example URIs that can be queried. */
-#define NUMBER_OF_URLS 6
+#define NUMBER_OF_URLS 2
 /* leading and ending slashes only for demo purposes, get cropped automatically when setting the Uri-Path */
 char *service_urls[NUMBER_OF_URLS] =
-{ ".well-known/core", "/hello/coap", "hello/1", "hello/2", "/hello/3", "hello/6" };
+{ ".well-known/core", "/hello/world" };
 #if PLATFORM_HAS_BUTTON
 static int uri_switch = 0;
 #endif
@@ -127,7 +127,7 @@ PROCESS_THREAD(er_example_client, ev, data)
   PRINTF("LL header: %u\n", UIP_LLH_LEN);
   PRINTF("IP+UDP header: %u\n", UIP_IPUDPH_LEN);
   PRINTF("REST max chunk: %u\n", REST_MAX_CHUNK_SIZE);
-  printf("sizeof(size_t): %d\n", sizeof(size_t));
+
 #if PLATFORM_HAS_BUTTON
   SENSORS_ACTIVATE(button_sensor);
   printf("Press a button to request %s\n", service_urls[uri_switch]);
@@ -150,7 +150,6 @@ PROCESS_THREAD(er_example_client, ev, data)
     printf("Context sucessfully added to DB!\n");
   }
 
-  printf("server ip poither %p\n", &server_ipaddr);
 
   etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
 
