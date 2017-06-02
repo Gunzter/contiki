@@ -14,3 +14,9 @@
 	path = platform/stm32nucleo-spirit1/stm32cube-lib
 	url = https://github.com/STclab/stm32nucleo-spirit1-lib
 
+[submodule "tinydtls"]
+	path = tinydtls
+	url = https://github.com/cetic/tinydtls/
+[submodule "apps/tinydtls"]
+	path = apps/tinydtls
+	url = https://github.com/cetic/tinydtls/
