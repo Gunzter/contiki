@@ -25,9 +25,9 @@
       org.contikios.cooja.mspmote.WismoteMoteType
       <identifier>z11</identifier>
       <description>c</description>
-      <source EXPORT="discard">[CONTIKI_DIR]/examples/coap-dtls-benchmark/er-coap-client.c</source>
+      <source EXPORT="discard">[CONTIKI_DIR]/examples/coap-benchmark/er-coap-client.c</source>
       <commands EXPORT="discard">make er-coap-client.wismote TARGET=wismote TARGET_MEMORY_MODEL=large V=1</commands>
-      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/coap-dtls-benchmark/er-coap-client.wismote</firmware>
+      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/coap-benchmark/er-coap-client.wismote</firmware>
       <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.RimeAddress</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.IPAddress</moteinterface>
@@ -65,9 +65,9 @@
       org.contikios.cooja.mspmote.WismoteMoteType
       <identifier>z13</identifier>
       <description>s</description>
-      <source EXPORT="discard">[CONTIKI_DIR]/examples/coap-dtls-benchmark/er-coap-server.c</source>
+      <source EXPORT="discard">[CONTIKI_DIR]/examples/coap-benchmark/er-coap-server.c</source>
       <commands EXPORT="discard">make er-coap-server.wismote TARGET=wismote TAGET_MEMORY_MODEL=large V=1</commands>
-      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/coap-dtls-benchmark/er-coap-server.wismote</firmware>
+      <firmware EXPORT="copy">[CONTIKI_DIR]/examples/coap-benchmark/er-coap-server.wismote</firmware>
       <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.RimeAddress</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.IPAddress</moteinterface>

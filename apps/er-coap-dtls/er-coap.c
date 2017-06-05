@@ -43,6 +43,7 @@
 #include "contiki-net.h"
 
 #include "er-coap.h"
+#include "er-coap-engine.h"
 #include "er-coap-transactions.h"
 
 #define DEBUG 0
@@ -60,7 +61,6 @@
 /*---------------------------------------------------------------------------*/
 /*- Variables ---------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-static struct uip_udp_conn *udp_conn = NULL;
 static uint16_t current_mid = 0;
 
 coap_status_t erbium_status_code = NO_ERROR;
@@ -68,8 +68,7 @@ char *coap_error_message = "";
 /*---------------------------------------------------------------------------*/
 /*- Local helper functions --------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-//static TODO 
-uint16_t
+static uint16_t
 coap_log_2(uint16_t value)
 {
   uint16_t result = 0;
@@ -82,8 +81,7 @@ coap_log_2(uint16_t value)
   return result ? result - 1 : result;
 }
 /*---------------------------------------------------------------------------*/
-//static TODO
-uint32_t
+static uint32_t
 coap_parse_int_option(uint8_t *bytes, size_t length)
 {
   uint32_t var = 0;
@@ -134,8 +132,7 @@ coap_set_option_header(unsigned int delta, size_t length, uint8_t *buffer)
   return ++written;
 }
 /*---------------------------------------------------------------------------*/
-//static TODO fixa 
-size_t
+static size_t
 coap_serialize_int_option(unsigned int number, unsigned int current_number,
                           uint8_t *buffer, uint32_t value)
 {
@@ -173,8 +170,7 @@ coap_serialize_int_option(unsigned int number, unsigned int current_number,
   return i;
 }
 /*---------------------------------------------------------------------------*/
-//static TODO 
-size_t
+static size_t
 coap_serialize_array_option(unsigned int number, unsigned int current_number,
                             uint8_t *buffer, uint8_t *array, size_t length,
                             char split_char)
@@ -221,8 +217,7 @@ coap_serialize_array_option(unsigned int number, unsigned int current_number,
   return i;
 }
 /*---------------------------------------------------------------------------*/
-//static TODO
-void
+static void
 coap_merge_multi_option(char **dst, size_t *dst_len, uint8_t *option,
                         size_t option_len, char separator)
 {
@@ -284,9 +279,7 @@ void
 coap_init_connection(uint16_t port)
 {
   /* new connection with remote host */
-  udp_conn = udp_new(NULL, 0, NULL);
-  udp_bind(udp_conn, port);
-  PRINTF("Listening on port %u\n", uip_ntohs(udp_conn->lport));
+  coap_default_context = coap_init_communication_layer(port);
 
   /* initialize transaction ID */
   current_mid = random_rand();
@@ -384,7 +377,6 @@ coap_serialize_message(void *packet, uint8_t *buffer)
   COAP_SERIALIZE_INT_OPTION(COAP_OPTION_ACCEPT, accept, "Accept");
   COAP_SERIALIZE_STRING_OPTION(COAP_OPTION_LOCATION_QUERY, location_query,
                                '&', "Location-Query");
-  COAP_SERIALIZE_BYTE_OPTION(COAP_OPTION_OBJECT_SECURITY, object_security, "Object-Security");
   COAP_SERIALIZE_BLOCK_OPTION(COAP_OPTION_BLOCK2, block2, "Block2");
   COAP_SERIALIZE_BLOCK_OPTION(COAP_OPTION_BLOCK1, block1, "Block1");
   COAP_SERIALIZE_INT_OPTION(COAP_OPTION_SIZE2, size2, "Size2");
@@ -426,23 +418,6 @@ coap_serialize_message(void *packet, uint8_t *buffer)
          );
 
   return (option - buffer) + coap_pkt->payload_len; /* packet length */
-}
-/*---------------------------------------------------------------------------*/
-void
-coap_send_message(uip_ipaddr_t *addr, uint16_t port, uint8_t *data,
-                  uint16_t length)
-{
-  /* configure connection to reply to client */
-  uip_ipaddr_copy(&udp_conn->ripaddr, addr);
-  udp_conn->rport = port;
-
-  uip_udp_packet_send(udp_conn, data, length);
-
-  PRINTF("-sent UDP datagram (%u)-\n", length);
-
-  /* restore server socket to allow data from any node */
-  memset(&udp_conn->ripaddr, 0, sizeof(udp_conn->ripaddr));
-  udp_conn->rport = 0;
 }
 /*---------------------------------------------------------------------------*/
 coap_status_t

@@ -41,8 +41,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "er-coap-engine.h"
-#include "tinydtls.h"
-#include "dtls.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -56,21 +54,19 @@
 #define PRINTLLADDR(addr)
 #endif
 
-/* FOR DTLS */
-static struct uip_udp_conn *server_conn;
-
 PROCESS(coap_engine, "CoAP Engine");
 
 /*---------------------------------------------------------------------------*/
 /*- Variables ---------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 static service_callback_t service_cbk = NULL;
+context_t * coap_default_context = NULL;
 
 /*---------------------------------------------------------------------------*/
 /*- Internal API ------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-static int
-coap_receive(void)
+int
+coap_receive(context_t * ctx)
 {
   erbium_status_code = NO_ERROR;
 
@@ -112,6 +108,7 @@ coap_receive(void)
           uint16_t block_size = COAP_MAX_BLOCK_SIZE;
           uint32_t block_offset = 0;
           int32_t new_offset = 0;
+          coap_set_transaction_context(transaction, ctx);
 
           /* prepare response */
           if(message->type == COAP_TYPE_CON) {
@@ -241,8 +238,10 @@ coap_receive(void)
         } else if(message->type == COAP_TYPE_RST) {
           PRINTF("Received RST\n");
           /* cancel possible subscriptions */
+#if COAP_CORE_OBSERVE
           coap_remove_observer_by_mid(&UIP_IP_BUF->srcipaddr,
                                       UIP_UDP_BUF->srcport, message->mid);
+#endif
         }
 
         if((transaction = coap_get_transaction_by_mid(message->mid))) {
@@ -265,7 +264,7 @@ coap_receive(void)
         if((message->type == COAP_TYPE_CON || message->type == COAP_TYPE_NON)
               && IS_OPTION(message, COAP_OPTION_OBSERVE)) {
           PRINTF("Observe [%u]\n", message->observe);
-          coap_handle_notification(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
+          coap_handle_notification(ctx, &UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
               message);
         }
 #endif /* COAP_OBSERVE_CLIENT */
@@ -298,7 +297,7 @@ coap_receive(void)
                         message->mid);
       coap_set_payload(message, coap_error_message,
                        strlen(coap_error_message));
-      coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
+      coap_send_message(ctx, &UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
                         uip_appdata, coap_serialize_message(message,
                                                             uip_appdata));
     }
@@ -326,87 +325,6 @@ coap_get_rest_method(void *packet)
   return (rest_resource_flags_t)(1 <<
                                  (((coap_packet_t *)packet)->code - 1));
 }
-
-/*---------------------------------------------------------------------------*/
-/*- DTLS Part -------------------------------------------------------------*/
-/*---------------------------------------------------------------------------*/
-
-//#define UIP_IP_BUF   ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
-//#define UIP_UDP_BUF  ((struct uip_udp_hdr *)&uip_buf[UIP_LLIPH_LEN])
-
-#define psk_id_length 1
-#define psk_id "C"
-#define psk_key_length 5
-#define psk_key "bbbbb"
-
-int get_psk_info(struct dtls_context_t *ctx /*UNUSED_PARAM*/,
-    const session_t *session /*UNUSED_PARAM*/,
-    dtls_credentials_type_t type,
-    const unsigned char *id, size_t id_len,
-    unsigned char *result, size_t result_length) {
-
-
-	switch (type) {
-	   case DTLS_PSK_IDENTITY:
-	        if (result_length < psk_id_length) {
-//		        dtls_warn("cannot set psk_identity -- buffer too small\n");
-	        	return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-	        }
-	        memcpy(result, psk_id, psk_id_length);
-		return psk_id_length;
-		
-  	   case DTLS_PSK_KEY:
-		if (id_len != psk_id_length || memcmp(psk_id, id, id_len) != 0) {
-//			dtls_warn("PSK for unknown id requested, exiting\n");
-			return dtls_alert_fatal_create(DTLS_ALERT_ILLEGAL_PARAMETER);
-		} else if (result_length < psk_key_length) {
-//			dtls_warn("cannot set psk -- buffer too small\n");
-			return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-		}
-		
-		memcpy(result, psk_key, psk_key_length);
-		return psk_key_length;
-//	   default:
-//	         dtls_warn("unsupported request type: %d\n", type);
-	}
-	
-	return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-}
-
-int send_to_peer(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len) {
-     struct uip_udp_conn *conn = (struct uip_udp_conn *)dtls_get_app_data(ctx);
-     uip_ipaddr_copy(&conn->ripaddr, &session->addr);
-     conn->rport = session->port;
-     uip_udp_packet_send(conn, data, len);
-     memset(&conn->ripaddr, 0, sizeof(server_conn->ripaddr));
-     memset(&conn->rport, 0, sizeof(conn->rport));
-     return len;
-}
-
-int read_from_peer(struct dtls_context_t *ctx, session_t *session, uint8 *data, size_t len) {
-	  return dtls_write(ctx, session, data, len);
-}
-
-int send_to_peer(struct dtls_context_t *, session_t *, uint8 *, size_t);
-static dtls_context_t *ctx;
-
-static dtls_handler_t cb = {
-  .write = send_to_peer,
-  .read  = read_from_peer,
-  .event = NULL,
-  .get_psk_info = get_psk_info
-};
-
-void printf_hex(unsigned char *data, unsigned int len){
-		int i=0;
-			for(i=0; i<len; i++)
-			{
-					//	printf("iterator %d - ",i);
-		printf(" %02x ",data[i]);
-	}
-	printf("\n");
-}
-
 /*---------------------------------------------------------------------------*/
 /*- Server Part -------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
@@ -422,66 +340,24 @@ PROCESS_THREAD(coap_engine, ev, data)
 {
   PROCESS_BEGIN();
   PRINTF("Starting %s receiver...\n", coap_rest_implementation.name);
-  printf("STARTING COAP WITH DTLS, (soon)\n");
+
+#if WITH_WELL_KNOWN_CORE
   rest_activate_resource(&res_well_known_core, ".well-known/core");
+#endif
 
   coap_register_as_transaction_handler();
   coap_init_connection(SERVER_LISTEN_PORT);
-   
-  dtls_init();
-  
-  server_conn = udp_new(NULL, 0, NULL);
-  udp_bind(server_conn, UIP_HTONS(5684));
-    
-  ctx = dtls_new_context(server_conn);
-	
-  dtls_set_handler(ctx, &cb); 
-#ifndef WATCHDOG_CONF_ENABLE
- printf(" WATCHDOG_CONF_ENABLE 1\n");
-#endif
-  session_t session;
-  
+
   while(1) {
-	  printf("running\n");
-	  PROCESS_WAIT_EVENT();
-	
-	  if(ev == tcpip_event && uip_newdata()) {
- 	       	 printf("ITS HAPPENING\n");
-
-	         uip_ipaddr_copy(&session.addr, &UIP_IP_BUF->srcipaddr);
-	         session.port = UIP_UDP_BUF->srcport;
-	         session.size = sizeof(session.addr) + sizeof(session.port);
-	         printf("uip apdata len %d\n", uip_datalen());
- 	  	 printf_hex(uip_appdata, uip_datalen());
-
-		 printf("ITS MESSAGE TIME\n");
-	         dtls_handle_message(ctx, &session, uip_appdata, uip_datalen());
-	  	
-		 printf("ITS OVER\n");
-	  }
-  }
-
-
- /* while(1) {
-    printf("Running\n");
     PROCESS_YIELD();
-    printf("after yeald\n");
+
     if(ev == tcpip_event) {
- 	printf("TCP/IP EVENT CATCHED!\n");
-	session_t session;
-	uip_ipaddr_copy(&session.addr, &UIP_IP_BUF->srcipaddr);
-	session.port = UIP_UDP_BUF->srcport;
-	session.size = sizeof(session.addr) + sizeof(session.port);
-			     
-	dtls_handle_message(ctx, &session, uip_appdata, uip_datalen());
-	printf("END DTLS\n");	
-//	coap_receive();
-    
+      coap_handle_receive(coap_default_context);
     } else if(ev == PROCESS_EVENT_TIMER) {
-      // retransmissions are handled here 
+      /* retransmissions are handled here */
       coap_check_transactions();
     }
-  } */ /* while (1) */
+  } /* while (1) */
 
   PROCESS_END();
 }
@@ -499,7 +375,7 @@ coap_blocking_request_callback(void *callback_data, void *response)
 /*---------------------------------------------------------------------------*/
 PT_THREAD(coap_blocking_request
             (struct request_state_t *state, process_event_t ev,
-            uip_ipaddr_t *remote_ipaddr, uint16_t remote_port,
+            context_t *ctx, uip_ipaddr_t *remote_ipaddr, uint16_t remote_port,
             coap_packet_t *request,
             blocking_response_handler request_callback))
 {
@@ -521,6 +397,7 @@ PT_THREAD(coap_blocking_request
     request->mid = coap_get_mid();
     if((state->transaction = coap_new_transaction(request->mid, remote_ipaddr,
                                                   remote_port))) {
+      coap_set_transaction_context(state->transaction, ctx);
       state->transaction->callback = coap_blocking_request_callback;
       state->transaction->callback_data = state;
 
