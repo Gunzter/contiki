@@ -132,6 +132,7 @@ size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* 
   if(sending == 1){
     if(coap_is_request(coap_pkt)) {
    //   PRINTF("seq 1 1 %" PRIu64 "\n", coap_pkt->context->SenderContext->Seq);
+
       uint8_t seq_len = to_bytes(coap_pkt->context->SenderContext->Seq, seq_buffer);
 
       ret += OPT_CBOR_put_bytes(&buffer, coap_pkt->context->SenderContext->SenderIdLen, coap_pkt->context->SenderContext->SenderId);
@@ -139,6 +140,7 @@ size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* 
     } else {
    //   PRINTF("seq 1 2 %" PRIu64 "\n", coap_pkt->context->RecipientContext->LastSeq);
       uint8_t seq_len = to_bytes(coap_pkt->context->RecipientContext->LastSeq, seq_buffer);
+      
       ret += OPT_CBOR_put_bytes(&buffer, coap_pkt->context->RecipientContext->RecipientIdLen, coap_pkt->context->RecipientContext->RecipientId);
       ret += OPT_CBOR_put_bytes(&buffer, seq_len, seq_buffer);
     } 
