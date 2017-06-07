@@ -17,7 +17,7 @@
 uint8_t OPT_CBOR_put_text(uint8_t **buffer, char *text, uint8_t text_len){
 	uint8_t ret = 0;
 
-	if(text_len > 15){
+	if(text_len > 23 ){
 		**buffer = 0x78;
 		(*buffer)++;
 		**buffer = text_len;
@@ -48,7 +48,7 @@ uint8_t OPT_CBOR_put_array(uint8_t **buffer,uint8_t elements){
 
 uint8_t OPT_CBOR_put_bytes(uint8_t **buffer, uint8_t bytes_len, uint8_t *bytes){
 	uint8_t ret = 0;
-	if(bytes_len > 15){
+	if(bytes_len > 23){
 		**buffer = 0x58;
 		(*buffer)++;
 		**buffer = bytes_len;

@@ -136,12 +136,15 @@ PROCESS_THREAD(er_example_client, ev, data)
   oscoap_ctx_store_init();
   init_token_seq_store();
 
-	if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
-  	printf("Error: Could not create new Context!\n");
-	}
+if(oscoap_derrive_ctx(master_secret, 35, NULL, 0, 12, 1,sender_id, 6, receiver_id, 6, 32) == 0) {
+  printf("Error: Could not derive new Context!\n");
+}
+	//if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
+ // 	printf("Error: Could not create new Context!\n");
+//	}
 	
 	OscoapCommonContext* c = NULL;
-  uint8_t rid2[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
+  uint8_t rid2[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
   c = oscoap_find_ctx_by_rid(rid2, 6);
   PRINTF("COAP max size %d\n", COAP_MAX_PACKET_SIZE);
   if(c == NULL){
@@ -189,7 +192,7 @@ PROCESS_THREAD(er_example_client, ev, data)
       uint8_t rid3[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
       request->context = oscoap_find_ctx_by_rid(rid3, 6);
      
-      coap_set_header_uri_path(request, service_urls[4]);
+      coap_set_header_uri_path(request, service_urls[1]);
 
    //   char* u_buffer;
    //   int uri_len = coap_get_header_uri_path(request, &u_buffer);
@@ -205,7 +208,7 @@ PROCESS_THREAD(er_example_client, ev, data)
       //request->ipaddr = &server_ipaddr;
       
       coap_set_token(request, token, 2);
-      printf("--Requesting %s--\n", service_urls[4]);
+      printf("--Requesting %s--\n", service_urls[1]);
 
       PRINT6ADDR(&server_ipaddr);
       PRINTF(" : %u\n", UIP_HTONS(REMOTE_PORT));

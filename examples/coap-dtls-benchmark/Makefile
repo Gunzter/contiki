@@ -6,6 +6,7 @@ unittest: native-unit-test
 
 CONTIKI=../..
 
+CFLAGS += -DNDEBUG
 WITH_DTLS_COAP=1
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\" 
