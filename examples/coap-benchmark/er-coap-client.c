@@ -69,7 +69,9 @@
 #define LOCAL_PORT      UIP_HTONS(COAP_DEFAULT_PORT + 1)
 #define REMOTE_PORT     UIP_HTONS(COAP_DEFAULT_PORT)
 
-#define TOGGLE_INTERVAL 10
+#define TOGGLE_INTERVAL 5
+#define OBS_RESOURCE_URI "/observe"
+static coap_observee_t *obs;
 
 PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
@@ -82,9 +84,7 @@ static struct etimer et;
 /* leading and ending slashes only for demo purposes, get cropped automatically when setting the Uri-Path */
 char *service_urls[NUMBER_OF_URLS] =
 { ".well-known/core", "/hello/world" };
-#if PLATFORM_HAS_BUTTON
-static int uri_switch = 0;
-#endif
+
 
 /* This function is will be passed to COAP_BLOCKING_REQUEST() to handle responses. */
 void
@@ -97,6 +97,60 @@ client_chunk_handler(void *response)
   printf("\n");
 }
 
+static void
+notification_callback(coap_observee_t *obs, void *notification,
+                      coap_notification_flag_t flag)
+{
+  int len = 0;
+  const uint8_t *payload = NULL;
+
+  printf("Notification handler\n");
+  printf("Observee URI: %s\n", obs->url);
+  if(notification) {
+    len = coap_get_payload(notification, &payload);
+  }
+  switch(flag) {
+  case NOTIFICATION_OK:
+    printf("NOTIFICATION OK: %*s\n", len, (char *)payload);
+    break;
+  case OBSERVE_OK: /* server accepeted observation request */
+    printf("OBSERVE_OK: %*s\n", len, (char *)payload);
+    break;
+  case OBSERVE_NOT_SUPPORTED:
+    printf("OBSERVE_NOT_SUPPORTED: %*s\n", len, (char *)payload);
+    obs = NULL;
+    break;
+  case ERROR_RESPONSE_CODE:
+    printf("ERROR_RESPONSE_CODE: %*s\n", len, (char *)payload);
+    obs = NULL;
+    break;
+  case NO_REPLY_FROM_SERVER:
+    printf("NO_REPLY_FROM_SERVER: "
+           "removing observe registration with token %x%x\n",
+           obs->token[0], obs->token[1]);
+    obs = NULL;
+    break;
+  }
+}
+/*----------------------------------------------------------------------------*/
+/*
+ * Toggle the observation of the remote resource
+ */
+void
+toggle_observation(void)
+{
+  if(obs) {
+    printf("Stopping observation\n");
+    coap_obs_remove_observee(obs);
+    obs = NULL;
+  } else {
+    printf("Starting observation\n");
+    obs = coap_obs_request_registration(&server_ipaddr, REMOTE_PORT,
+                                        OBS_RESOURCE_URI, notification_callback, NULL);
+  }
+}
+
+uint8_t counter = 0;
 
 PROCESS_THREAD(er_example_client, ev, data)
 {
@@ -113,18 +167,9 @@ PROCESS_THREAD(er_example_client, ev, data)
   PRINTF("IP+UDP header: %u\n", UIP_IPUDPH_LEN);
   PRINTF("REST max chunk: %u\n", REST_MAX_CHUNK_SIZE);
  
-#if PLATFORM_HAS_BUTTON
-  SENSORS_ACTIVATE(button_sensor);
-  printf("Press a button to request %s\n", service_urls[uri_switch]);
-#endif
-    
-
   etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
 
-#if PLATFORM_HAS_BUTTON
-  SENSORS_ACTIVATE(button_sensor);
-  printf("Press a button to request %s\n", service_urls[uri_switch]);
-#endif
+  
 
   while(1) {
     PROCESS_YIELD();
@@ -132,48 +177,27 @@ PROCESS_THREAD(er_example_client, ev, data)
 
     if(etimer_expired(&et)) {
       printf("--Toggle timer--\n");
-
+      printf("Requesting %s\n", service_urls[1]);
       // prepare request, TID is set by COAP_BLOCKING_REQUEST() 
       coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
       coap_set_header_uri_path(request, service_urls[1]);
 
-      const char msg[] = "Toggle!";
-
-   //   coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
-
       PRINT6ADDR(&server_ipaddr);
       PRINTF(" : %u\n", UIP_HTONS(REMOTE_PORT));
 
       COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request,
                             client_chunk_handler);
 
+      counter++;
       printf("\n--Done--\n");
-    
+      if( counter % 2 == 0 ){
+        toggle_observation();
+      }
 
       etimer_reset(&et);
 
-#if PLATFORM_HAS_BUTTON
-    } else if(ev == sensors_event && data == &button_sensor) {
+    } 
 
-      /* send a request to notify the end of the process */
-
-      coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-      coap_set_header_uri_path(request, service_urls[uri_switch]);
-
-      printf("--Requesting %s--\n", service_urls[uri_switch]);
-
-      PRINT6ADDR(&server_ipaddr);
-      PRINTF(" : %u\n", UIP_HTONS(REMOTE_PORT));
-
-      COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request,
-                            client_chunk_handler);
-
-      printf("\n--Done--\n");
-
-      uri_switch = (uri_switch + 1) % NUMBER_OF_URLS;
-#endif
-    }
-  }
-
+  } /* while(1) */
   PROCESS_END();
 }
