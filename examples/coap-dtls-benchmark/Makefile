@@ -1,8 +1,7 @@
-all: er-coap-server er-coap-client  
+all: er-coaps-server er-coaps-client  
 #er-coap-observe-client  er-oscoap-observe-client
 # use target "er-plugtest-server" explicitly when requried 
 
-unittest: native-unit-test
 
 CONTIKI=../..
 
