@@ -67,29 +67,7 @@
  */
 extern resource_t
   res_hello,
-  res_mirror,
-  res_chunks,
-  res_separate,
-  res_push,
-  res_event,
-	  res_sub,
-	  res_b1_sep_b2;
-#if PLATFORM_HAS_LEDS
-extern resource_t res_leds, res_toggle;
-#endif
-#if PLATFORM_HAS_LIGHT
-#include "dev/light-sensor.h"
-extern resource_t res_light;
-#endif
-#if PLATFORM_HAS_BATTERY
-#include "dev/battery-sensor.h"
-extern resource_t res_battery;
-#endif
-#if PLATFORM_HAS_TEMPERATURE
-#include "dev/temperature-sensor.h"
-extern resource_t res_temperature;
-#endif
-
+  res_plugtest_obs;
 
 
 
@@ -125,30 +103,8 @@ PROCESS_THREAD(er_example_server, ev, data)
    * All static variables are the same for each URI path.
    */
   rest_activate_resource(&res_hello, "hello/world");
-  //rest_activate_resource(&res_oscoap_obs, "observe");
-/*  rest_activate_resource(&res_mirror, "debug/mirror"); */
-/*  rest_activate_resource(&res_chunks, "test/chunks"); */
-/*  rest_activate_resource(&res_separate, "test/separate"); */
-  rest_activate_resource(&res_push, "test/push");
-/*  rest_activate_resource(&res_event, "sensors/button"); */
-/*  rest_activate_resource(&res_sub, "test/sub"); */
-/*  rest_activate_resource(&res_b1_sep_b2, "test/b1sepb2"); */
-#if PLATFORM_HAS_LEDS
-/*  rest_activate_resource(&res_leds, "actuators/leds"); */
- // rest_activate_resource(&res_toggle, "actuators/toggle");
-#endif
-#if PLATFORM_HAS_LIGHT
- // rest_activate_resource(&res_light, "sensors/light"); 
- // SENSORS_ACTIVATE(light_sensor);  
-#endif
-#if PLATFORM_HAS_BATTERY
- // rest_activate_resource(&res_battery, "sensors/battery");  
- // SENSORS_ACTIVATE(battery_sensor);  
-#endif
-#if PLATFORM_HAS_TEMPERATURE
-  //rest_activate_resource(&res_temperature, "sensors/temperature");  
- // SENSORS_ACTIVATE(temperature_sensor);  
-#endif
+  //rest_activate_resource(&res_plugtest_obs, "observe");
+
 
 
 /* Define application-specific events here. */
@@ -159,10 +115,10 @@ PROCESS_THREAD(er_example_server, ev, data)
       PRINTF("*******BUTTON*******\n");
 
       /* Call the event_handler for this application-specific event. */
-      res_event.trigger();
+     // res_event.trigger();
 
       /* Also call the separate response example handler. */
-      res_separate.resume();
+    //  res_separate.resume();
     }
 #endif /* PLATFORM_HAS_BUTTON */
   }                             /* while (1) */
