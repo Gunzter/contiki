@@ -75,29 +75,19 @@ PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
 
 uip_ipaddr_t server_ipaddr;
-static struct etimer et;
 
-/* Example URIs that can be queried. */
-#define NUMBER_OF_URLS 6
-/* leading and ending slashes only for demo purposes, get cropped automatically when setting the Uri-Path */
-char *service_urls[NUMBER_OF_URLS] =
-{ ".well-known/core", "/hello/coap", "hello/1", "hello/2", "/hello/3", "hello/6" };
+uint8_t test = 0;
+uint8_t failed_tests = 0;
 
-char *urls[ ] = { "/hello/coap", "hello/1", "hello/2", "/hello/3", "hello/6"};
-#if PLATFORM_HAS_BUTTON
-static int uri_switch = 0;
-#endif
+void test0_a(coap_packet_t* request);
+void test0_a_handler(void* response);
+void test1_a(coap_packet_t* request);
+void test1_a_handler(void* response);
+void test2_a(coap_packet_t* request);
+void test2_a_handler(void* response);
 
-/* This function is will be passed to COAP_BLOCKING_REQUEST() to handle responses. */
-void
-client_chunk_handler(void *response)
-{
-  const uint8_t *chunk;
+char *urls[5] = { "/hello/coap", "hello/1", "hello/2", "/hello/3", "hello/6"};
 
-  int len = coap_get_payload(response, &chunk);
-  printf("|%.*s", len, (char *)chunk);
-  printf("\n");
-}
 
 //Interop
 uint8_t master_secret[35] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -118,29 +108,24 @@ uint8_t token[] = { 0x05, 0x05};
 PROCESS_THREAD(er_example_client, ev, data)
 {
   PROCESS_BEGIN();
-
+  static struct etimer et;
   static coap_packet_t request[1];      /* This way the packet can be treated as pointer as usual. */
 
   SERVER_NODE(&server_ipaddr);
 
   /* receives all CoAP messages */
   coap_init_engine();
-  PRINTF("uIP buffer: %u\n", UIP_BUFSIZE);
-  PRINTF("LL header: %u\n", UIP_LLH_LEN);
-  PRINTF("IP+UDP header: %u\n", UIP_IPUDPH_LEN);
-  PRINTF("REST max chunk: %u\n", REST_MAX_CHUNK_SIZE);
-  printf("sizeof(size_t): %d\n", sizeof(size_t));
-#if PLATFORM_HAS_BUTTON
-  SENSORS_ACTIVATE(button_sensor);
-  printf("Press a button to request %s\n", service_urls[uri_switch]);
-#endif
-    
+
   oscoap_ctx_store_init();
   init_token_seq_store();
 
 	if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
   	printf("Error: Could not create new Context!\n");
 	}
+/*
+  OscoapCommonContext* oscoap_derrive_ctx(uint8_t* master_secret,
+           uint8_t master_secret_len, uint8_t* master_salt, uint8_t master_salt_len, uint8_t alg, uint8_t hkdf_alg,
+            uint8_t* sid, uint8_t sid_len, uint8_t* rid, uint8_t rid_len, uint8_t replay_window); */
 	
 	OscoapCommonContext* c = NULL;
   uint8_t rid2[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
@@ -151,97 +136,47 @@ PROCESS_THREAD(er_example_client, ev, data)
   }else{
     printf("Context sucessfully added to DB!\n");
   }
-
-  printf("server ip poither %p\n", &server_ipaddr);
-
-  etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
-
-#if PLATFORM_HAS_BUTTON
-  SENSORS_ACTIVATE(button_sensor);
-  printf("Press a button to request %s\n", service_urls[uri_switch]);
-#endif
-
+ 
+  etimer_set(&et, 10 * CLOCK_SECOND);
+    
+  //TODO, this should be implemented using the uri -> cid map, not like this.
+  uint8_t rid3[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
+  
+  void (*handler_ptr)(void*);
   while(1) {
     PROCESS_YIELD();
-  
+    if(etimer_expired(&et)) {   
+      switch ( test ) {
+        case 0: 
+          test0_a(request);
+          handler_ptr = test0_a_handler;
+          test++;
+          break;
+        case 1:
+          test1_a(request);
+          request->context = oscoap_find_ctx_by_rid(rid3, 6);
+          handler_ptr = test1_a_handler;
+          test++;
+          break;
 
-    if(etimer_expired(&et)) {
- /*     printf("--Toggle timer--\n");
-
-      // prepare request, TID is set by COAP_BLOCKING_REQUEST() 
-      coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-      coap_set_header_uri_path(request, service_urls[1]);
-
-      const char msg[] = "Toggle!";
-
-      coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
-
-      PRINT6ADDR(&server_ipaddr);
-      PRINTF(" : %u\n", UIP_HTONS(REMOTE_PORT));
-
-      COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request,
-                            client_chunk_handler);
-
-      printf("\n--Done--\n");
-*/
-      printf("\n --Get test/hello-- \n");
-   
-      coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
- 
-      //TODO, this should be implemented using the uri -> cid map, not like this.
-      uint8_t rid3[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
-      request->context = oscoap_find_ctx_by_rid(rid3, 6);
-     
-      coap_set_header_uri_path(request, service_urls[4]);
-
-   //   char* u_buffer;
-   //   int uri_len = coap_get_header_uri_path(request, &u_buffer);
-   //   char uri_host = "oscoap.test";
-      //int uri_host_len = coap_set_header_uri_host(request, &uri_host);
-     // printf("uri_host l %d\n", uri_host_len);
-      //char* uh;
-      //uri_host_len = coap_get_header_uri_host(request, &uh);
-      //printf("ubuf: %s\n",u_buffer);
-      //printf("uri-host %.*s\n",uri_host_len, uh);
-
-      coap_set_header_object_security(request);
-      //request->ipaddr = &server_ipaddr;
-      
-      coap_set_token(request, token, 2);
-      printf("--Requesting %s--\n", service_urls[4]);
-
-      PRINT6ADDR(&server_ipaddr);
-      PRINTF(" : %u\n", UIP_HTONS(REMOTE_PORT));
-
-      COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request,
-                            client_chunk_handler);
-
-      token[1]++;
-      printf("\n--Done--\n");
-
+        default:
+          if(failed_tests == 0){
+          printf("ALL tests PASSED! Drinks all around!\n");
+          } else {
+            printf("%d tests failed! Go back and fix those :(\n", failed_tests);
+          }
+      }
+      COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request, test0_a_handler);
+        
       etimer_reset(&et);
+    } /* etimer */
+  } /*while 1 */
+    
 
-#if PLATFORM_HAS_BUTTON
-    } else if(ev == sensors_event && data == &button_sensor) {
-
-      /* send a request to notify the end of the process */
-
-      coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-      coap_set_header_uri_path(request, service_urls[uri_switch]);
-
-      printf("--Requesting %s--\n", service_urls[uri_switch]);
-
-      PRINT6ADDR(&server_ipaddr);
-      PRINTF(" : %u\n", UIP_HTONS(REMOTE_PORT));
-
-      COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request,
-                            client_chunk_handler);
-
-      printf("\n--Done--\n");
-
-      uri_switch = (uri_switch + 1) % NUMBER_OF_URLS;
-#endif
-    }
+  if(failed_tests == 0){
+    printf("ALL tests PASSED! Drinks all around!\n");
+  } else {
+    printf("%d tests failed! Go back and fix those :(\n", failed_tests);
   }
 
   PROCESS_END();
@@ -253,7 +188,6 @@ void test0_a(coap_packet_t* request){
   coap_set_header_uri_path(request, urls[0]);
 
   printf("Test 0a: Sending!\n");
- // COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request, test0_a_handler);
 }
 
 void test0_a_handler(void* response){
@@ -269,16 +203,16 @@ void test0_a_handler(void* response){
     printf("Test 0a: FAILED!\n");
     printf("\t Expected result: \"Hello World!\" but was: ");
     oscoap_printf_char(response_payload, len);
+    failed_tests++;
   }
 }
-/*
+
 void test1_a(coap_packet_t* request){
   printf("\n\nTest 1a: Starting!\n");
   coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
   coap_set_header_uri_path(request, urls[1]);
 
   printf("Test 1a: Sending!\n");
-  COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request, test1_a_handler);
 }
 
 void test1_a_handler(void* response){
@@ -294,5 +228,6 @@ void test1_a_handler(void* response){
     printf("Test 1a: FAILED!\n");
     printf("\t Expected result: \"Hello World!\" but was: ");
     oscoap_printf_char(response_payload, len);
+    failed_tests++;
   }
-} */
+} 
