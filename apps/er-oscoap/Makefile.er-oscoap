@@ -2,6 +2,6 @@ er-oscoap_src = er-coap.c er-coap-engine.c er-coap-transactions.c      \
   er-coap-observe.c er-coap-separate.c er-coap-res-well-known-core.c \
   er-coap-block1.c er-coap-observe-client.c er-oscoap.c opt-cose.c cose-aes-ccm.c \
   opt-cbor.c sha224-256.c usha.c hkdf.c hmac.c er-oscoap-context.c \
-  sha1.c sha384-512.c cose-compression.c
+  cose-compression.c
 # Erbium will implement the REST Engine
 CFLAGS += -DREST=coap_rest_implementation

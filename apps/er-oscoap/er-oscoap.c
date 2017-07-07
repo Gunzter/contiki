@@ -42,7 +42,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include "cose-compression.h"
 
-#define DEBUG 1
+#define DEBUG 0 
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -89,16 +89,7 @@ uint8_t coap_is_request(coap_packet_t* coap_pkt){
 	}
 }
 
-/*
-external_aad = [
-   ver : uint,
-   code : uint,
-   options : bstr,
-   alg : int,
-   request_kid : bstr,
-   request_seq : bstr
-]
-*/
+
 size_t oscoap_prepare_external_aad(coap_packet_t* coap_pkt, opt_cose_encrypt_t* cose, uint8_t* buffer, uint8_t sending){
 
   uint8_t ret = 0;

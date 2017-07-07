@@ -35,7 +35,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include "er-oscoap.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -361,8 +361,6 @@ uint8_t OPT_COSE_Encrypt(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len)
 	}
 
 	PRINTF("Error in AES CCM Encrypt \n");
-	unsigned int x = ret;
-	PRINTF("%s%x\n", x<0?"-":"", x<0?-(unsigned)x:x);
 	return 1;
 }
 
@@ -413,8 +411,6 @@ uint8_t OPT_COSE_Decrypt(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len)
    	}
 
 	PRINTF("Error in AES CCM Decrypt \n");
-	unsigned int x = ret;
-	PRINTF("%s%x\n", x<0?"-":"", x<0?-(unsigned)x:x);
 	return 1;
 
 }

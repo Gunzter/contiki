@@ -82,6 +82,8 @@ static struct etimer et;
 /* leading and ending slashes only for demo purposes, get cropped automatically when setting the Uri-Path */
 char *service_urls[NUMBER_OF_URLS] =
 { ".well-known/core", "/hello/coap", "hello/1", "hello/2", "/hello/3", "hello/6" };
+
+char *urls[ ] = { "/hello/coap", "hello/1", "hello/2", "/hello/3", "hello/6"};
 #if PLATFORM_HAS_BUTTON
 static int uri_switch = 0;
 #endif
@@ -244,3 +246,53 @@ PROCESS_THREAD(er_example_client, ev, data)
 
   PROCESS_END();
 }
+
+void test0_a(coap_packet_t* request){
+  printf("\n\nTest 0a: Starting!\n");
+  coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
+  coap_set_header_uri_path(request, urls[0]);
+
+  printf("Test 0a: Sending!\n");
+ // COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request, test0_a_handler);
+}
+
+void test0_a_handler(void* response){
+  printf("Test 0a: Receiving Response!\n");
+
+  const uint8_t *response_payload;
+  const char* desired = "Hello World!";
+  int len = coap_get_payload(response, &response_payload);
+  int res = strncmp( desired, response_payload, strlen(desired));
+  if(res == 0){
+    printf("Test 0a: PASSED!\n");
+  }else {
+    printf("Test 0a: FAILED!\n");
+    printf("\t Expected result: \"Hello World!\" but was: ");
+    oscoap_printf_char(response_payload, len);
+  }
+}
+/*
+void test1_a(coap_packet_t* request){
+  printf("\n\nTest 1a: Starting!\n");
+  coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
+  coap_set_header_uri_path(request, urls[1]);
+
+  printf("Test 1a: Sending!\n");
+  COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request, test1_a_handler);
+}
+
+void test1_a_handler(void* response){
+  printf("Test 1a: Receiving Response!\n");
+
+  const uint8_t *response_payload;
+  const char* desired = "Hello World!";
+  int len = coap_get_payload(response, &response_payload);
+  int res = strncmp( desired, response_payload, strlen(desired));
+  if(res == 0){
+    printf("Test 1a: PASSED!\n");
+  }else {
+    printf("Test 1a: FAILED!\n");
+    printf("\t Expected result: \"Hello World!\" but was: ");
+    oscoap_printf_char(response_payload, len);
+  }
+} */
