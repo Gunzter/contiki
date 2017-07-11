@@ -89,7 +89,8 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   } else {
     memcpy(buffer, message, length);
   } REST.set_header_content_type(response, REST.type.TEXT_PLAIN); /* text/plain is the default, hence this option could be omitted. */
-  const uint8_t etag = { 0x2b};
+  const uint8_t etag = 0x2b;
+
   REST.set_header_etag(response, &etag, 1);
   REST.set_response_payload(response, buffer, length);
 }

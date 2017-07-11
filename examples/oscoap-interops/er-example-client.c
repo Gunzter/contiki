@@ -44,6 +44,8 @@
 #include "er-coap-engine.h"
 #include "dev/button-sensor.h"
 #include "er-oscoap.h"
+#include <assert.h>
+
 
 #define DEBUG 1
 #if DEBUG
@@ -79,14 +81,17 @@ uip_ipaddr_t server_ipaddr;
 uint8_t test = 0;
 uint8_t failed_tests = 0;
 
+void response_handler(void* response);
 void test0_a(coap_packet_t* request);
 void test0_a_handler(void* response);
 void test1_a(coap_packet_t* request);
 void test1_a_handler(void* response);
 void test2_a(coap_packet_t* request);
 void test2_a_handler(void* response);
+void test3_a(coap_packet_t* request);
+void test3_a_handler(void* response);
 
-char *urls[5] = { "/hello/coap", "hello/1", "hello/2", "/hello/3", "hello/6"};
+char *urls[5] = { "/hello/coap", "/hello/1", "/hello/2", "/hello/3", "/hello/6"};
 
 
 //Interop
@@ -104,6 +109,7 @@ uint8_t receiver_key[] =  {0xd5, 0xcb, 0x37, 0x10, 0x37, 0x15, 0x34, 0xa1, 0xca,
 uint8_t receiver_iv[] =  {0x20, 0x75, 0x0b, 0x95, 0xf9, 0x78, 0xc8 };
 
 uint8_t token[] = { 0x05, 0x05};
+uint8_t rid2[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
 
 PROCESS_THREAD(er_example_client, ev, data)
 {
@@ -122,13 +128,12 @@ PROCESS_THREAD(er_example_client, ev, data)
 	if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
   	printf("Error: Could not create new Context!\n");
 	}
-/*
-  OscoapCommonContext* oscoap_derrive_ctx(uint8_t* master_secret,
+  /* OscoapCommonContext* oscoap_derrive_ctx(uint8_t* master_secret,
            uint8_t master_secret_len, uint8_t* master_salt, uint8_t master_salt_len, uint8_t alg, uint8_t hkdf_alg,
             uint8_t* sid, uint8_t sid_len, uint8_t* rid, uint8_t rid_len, uint8_t replay_window); */
 	
 	OscoapCommonContext* c = NULL;
-  uint8_t rid2[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
+
   c = oscoap_find_ctx_by_rid(rid2, 6);
   PRINTF("COAP max size %d\n", COAP_MAX_PACKET_SIZE);
   if(c == NULL){
@@ -140,25 +145,24 @@ PROCESS_THREAD(er_example_client, ev, data)
   etimer_set(&et, 10 * CLOCK_SECOND);
     
   //TODO, this should be implemented using the uri -> cid map, not like this.
-  uint8_t rid3[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
+ // uint8_t rid3[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
   
-  void (*handler_ptr)(void*);
   while(1) {
     PROCESS_YIELD();
-    if(etimer_expired(&et)) {   
+    if(etimer_expired(&et)) {
       switch ( test ) {
-        case 0: 
+        case 0:
           test0_a(request);
-          handler_ptr = test0_a_handler;
-          test++;
           break;
         case 1:
           test1_a(request);
-          request->context = oscoap_find_ctx_by_rid(rid3, 6);
-          handler_ptr = test1_a_handler;
-          test++;
           break;
-
+        case 2:
+          test2_a(request);
+          break;
+        case 3:
+          test3_a(request);
+          break;
         default:
           if(failed_tests == 0){
           printf("ALL tests PASSED! Drinks all around!\n");
@@ -166,21 +170,35 @@ PROCESS_THREAD(er_example_client, ev, data)
             printf("%d tests failed! Go back and fix those :(\n", failed_tests);
           }
       }
-      COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request, test0_a_handler);
-        
+      coap_set_token(request, token, 2);
+      COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request, response_handler);
+      test++;
       etimer_reset(&et);
     } /* etimer */
   } /*while 1 */
     
-
-  if(failed_tests == 0){
-    printf("ALL tests PASSED! Drinks all around!\n");
-  } else {
-    printf("%d tests failed! Go back and fix those :(\n", failed_tests);
-  }
-
   PROCESS_END();
 }
+
+void response_handler(void* response){
+  printf("Response handler\n");
+  switch (test) {
+    case 0:
+      test0_a_handler(response);
+      break;
+    case 1:
+      test1_a_handler(response);
+      break;
+    case 2:
+      test2_a_handler(response);
+      break;
+    case 3:
+      test3_a_handler(response);
+    default:
+      printf("Default handler\n");
+  }
+}
+
 
 void test0_a(coap_packet_t* request){
   printf("\n\nTest 0a: Starting!\n");
@@ -194,7 +212,7 @@ void test0_a_handler(void* response){
   printf("Test 0a: Receiving Response!\n");
 
   const uint8_t *response_payload;
-  const char* desired = "Hello World!";
+  const char desired[] = "Hello World!";
   int len = coap_get_payload(response, &response_payload);
   int res = strncmp( desired, response_payload, strlen(desired));
   if(res == 0){
@@ -211,6 +229,12 @@ void test1_a(coap_packet_t* request){
   printf("\n\nTest 1a: Starting!\n");
   coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
   coap_set_header_uri_path(request, urls[1]);
+  coap_set_header_object_security(request);
+ 
+  request->context = oscoap_find_ctx_by_rid(rid2, 6); 
+  if(request->context == NULL){
+    printf("PROBLEMAS!\n");
+  } 
 
   printf("Test 1a: Sending!\n");
 }
@@ -219,14 +243,105 @@ void test1_a_handler(void* response){
   printf("Test 1a: Receiving Response!\n");
 
   const uint8_t *response_payload;
-  const char* desired = "Hello World!";
+  const char desired[] = "Hello World!";
   int len = coap_get_payload(response, &response_payload);
   int res = strncmp( desired, response_payload, strlen(desired));
+
   if(res == 0){
     printf("Test 1a: PASSED!\n");
   }else {
     printf("Test 1a: FAILED!\n");
     printf("\t Expected result: \"Hello World!\" but was: ");
+    oscoap_printf_char(response_payload, len);
+    failed_tests++;
+  }
+} 
+
+void test2_a(coap_packet_t* request){
+  printf("\n\nTest 2a: Starting!\n");
+  coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
+  coap_set_header_uri_path(request, urls[2]);
+  coap_set_header_object_security(request);
+ 
+  request->context = oscoap_find_ctx_by_rid(rid2, 6); 
+  if(request->context == NULL){
+    printf("PROBLEMAS!\n");
+  }    
+
+  char uri_query[] = "first=1";
+  coap_set_header_uri_query(request, uri_query);
+  printf("Test 2a: Sending!\n");
+}
+
+void test2_a_handler(void* response){
+  printf("Test 2a: Receiving Response!\n");
+
+  const uint8_t *response_payload;
+  const char desired[] = "Hello World!";
+  const uint8_t desired_etag = 0x2b;
+  int len = coap_get_payload(response, &response_payload);
+  int res = strncmp( desired, response_payload, strlen(desired));
+  uint8_t *etag;
+
+  int etag_len = coap_get_header_etag(response, &etag);
+  if((etag_len != 1)){
+    res++;
+  }
+  
+  res += memcmp(etag, &desired_etag, 1);
+
+  if(res == 0){
+    printf("Test 2a: PASSED!\n");
+  }else {
+    printf("Test 2a: FAILED!\n");
+    printf("\t Expected result: \"Hello World!\" but was: ");
+    oscoap_printf_char(response_payload, len);
+    printf("Expected etag: \"0x2b\" or \"43\" but was %02x or %d, length %d\n", etag[0], etag[0], etag_len);
+    failed_tests++;
+  }
+} 
+
+void test3_a(coap_packet_t* request){
+  printf("\n\nTest 3a: Starting!\n");
+  coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
+  coap_set_header_uri_path(request, urls[3]);
+  coap_set_header_accept(request, 0);
+
+  coap_set_header_object_security(request);
+  request->context = oscoap_find_ctx_by_rid(rid2, 6); 
+  if(request->context == NULL){
+    printf("PROBLEMAS!\n");
+  } 
+
+  printf("Test 3a: Sending!\n");
+}
+
+void test3_a_handler(void* response){
+  printf("Test 3a: Receiving Response!\n");
+
+  const uint8_t *response_payload;
+  const char desired[] = "Hello World!";
+  int len = coap_get_payload(response, &response_payload);
+  int res = strncmp( desired, response_payload, strlen(desired));
+  
+  uint32_t age = 0;
+  coap_get_header_max_age(response, &age);
+  if(age != 0x05){
+    res++;
+  }
+
+  unsigned int content = 15;
+  coap_get_header_content_format(response, &content);
+  if(content != 0){
+    res++;
+  }
+
+  if(res == 0){
+    printf("Test 3a: PASSED!\n");
+  }else {
+    printf("Test 3a: FAILED!\n");
+    printf("\t Expected result: \"Hello World!\" but was: ");
+    printf("Expected restult: Max Age \"5\", was %d, Content Format \"0\", was %d\n", age, content);
     oscoap_printf_char(response_payload, len);
     failed_tests++;
   }

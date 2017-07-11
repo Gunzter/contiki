@@ -464,7 +464,7 @@ coap_send_message(uip_ipaddr_t *addr, uint16_t port, uint8_t *data,
 
   uip_udp_packet_send(udp_conn, data, length);
   PRINTF("-sent UDP datagram (%u)-\n", length);
-
+  printf("-sent UDP datagram (%u)-\n", length);
   /* restore server socket to allow data from any node */
   memset(&udp_conn->ripaddr, 0, sizeof(udp_conn->ripaddr));
   udp_conn->rport = 0;
