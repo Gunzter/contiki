@@ -5,6 +5,8 @@ unittest: native-unit-test
 
 CONTIKI=../..
 
+PROJECT_SOURCEFILES += interops_tests.c
+
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\" 
 #For saving .s and .o files
