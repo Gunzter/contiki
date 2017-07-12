@@ -77,15 +77,13 @@
 PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
 
+
 uip_ipaddr_t server_ipaddr;
 
 extern uint8_t test;
 extern uint8_t failed_tests;
 
 void response_handler(void* response);
-
-//char *urls[5] = { "/hello/coap", "/hello/1", "/hello/2", "/hello/3", "/hello/6"};
-
 
 //Interop
 uint8_t master_secret[35] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -108,7 +106,7 @@ PROCESS_THREAD(er_example_client, ev, data)
 {
   PROCESS_BEGIN();
   static struct etimer et;
-  static coap_packet_t request[1];      /* This way the packet can be treated as pointer as usual. */
+  static coap_packet_t request[1]; /* This way the packet can be treated as pointer as usual. */
 
   SERVER_NODE(&server_ipaddr);
 
@@ -136,9 +134,6 @@ PROCESS_THREAD(er_example_client, ev, data)
   }
  
   etimer_set(&et, 10 * CLOCK_SECOND);
-    
-  //TODO, this should be implemented using the uri -> cid map, not like this.
- // uint8_t rid3[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
   
   while(1) {
     PROCESS_YIELD();
@@ -156,6 +151,9 @@ PROCESS_THREAD(er_example_client, ev, data)
         case 3:
           test3_a(request);
           break;
+        case 4:
+          test4_a( &server_ipaddr, REMOTE_PORT);
+          break;
         default:
           if(failed_tests == 0){
           printf("ALL tests PASSED! Drinks all around!\n");
@@ -163,8 +161,10 @@ PROCESS_THREAD(er_example_client, ev, data)
             printf("%d tests failed! Go back and fix those :(\n", failed_tests);
           }
       }
-      coap_set_token(request, token, 2);
-      COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request, response_handler);
+      if(test != 4){
+        coap_set_token(request, token, 2);
+        COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request, response_handler);
+      }
       test++;
       etimer_reset(&et);
     } /* etimer */

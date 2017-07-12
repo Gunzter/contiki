@@ -8,8 +8,9 @@
 
 uint8_t test = 0;
 uint8_t failed_tests = 0;
+static coap_observee_t *obs;
 
-char *urls[5] = { "/hello/coap", "/hello/1", "/hello/2", "/hello/3", "/hello/6"};
+char *urls[6] = { "/hello/coap", "/hello/1", "/hello/2", "/hello/3", "/observe", "/hello/6"};
 uint8_t rid[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
 
 void test0_a(coap_packet_t* request){
@@ -164,3 +165,98 @@ void test3_a_handler(void* response){
     failed_tests++;
   }
 }
+
+void test4_a(uip_ipaddr_t *server_ipaddr, uint16_t server_port)
+{
+//  if(obs) {
+//    printf("Stopping observation\n");
+//    coap_obs_remove_observee(obs);
+//    obs = NULL;
+//  } else {
+//   printf("Starting observation\n");
+	OscoapCommonContext* ctx = oscoap_find_ctx_by_rid(rid, 6);
+    obs = oscoap_obs_request_registration(server_ipaddr, server_port,
+                                        urls[4], test4_a_handler, NULL, ctx);
+
+ //   obs = coap_obs_request_registration(server_ipaddr, REMOTE_PORT,
+ //                                       OBS_RESOURCE_URI, notification_callback, NULL);
+ // }
+}
+
+
+static void test4_a_handler(coap_observee_t *obs, void *notification,
+                      coap_notification_flag_t flag){
+  int len = 0;
+  const uint8_t *payload = NULL;
+
+  printf("Test 4a handler\n");
+  printf("Observee URI: %s\n", obs->url);
+  if(notification) {
+    len = coap_get_payload(notification, &payload);
+  }
+  switch(flag) {
+  case NOTIFICATION_OK:
+    printf("NOTIFICATION OK: %*s\n", len, (char *)payload);
+    break;
+  case OBSERVE_OK: /* server accepeted observation request */
+    printf("OBSERVE_OK: %*s\n", len, (char *)payload);
+    break;
+  case OBSERVE_NOT_SUPPORTED:
+    printf("OBSERVE_NOT_SUPPORTED: %*s\n", len, (char *)payload);
+    obs = NULL;
+    break;
+  case ERROR_RESPONSE_CODE:
+    printf("ERROR_RESPONSE_CODE: %*s\n", len, (char *)payload);
+    obs = NULL;
+    break;
+  case NO_REPLY_FROM_SERVER:
+    printf("NO_REPLY_FROM_SERVER: "
+           "removing observe registration with token %x%x\n",
+           obs->token[0], obs->token[1]);
+    obs = NULL;
+    break;
+  }
+
+}
+
+
+static void
+notification_callback(coap_observee_t *obs, void *notification,
+                      coap_notification_flag_t flag)
+{
+  int len = 0;
+  const uint8_t *payload = NULL;
+
+  printf("Notification handler\n");
+  printf("Observee URI: %s\n", obs->url);
+  if(notification) {
+    len = coap_get_payload(notification, &payload);
+  }
+  switch(flag) {
+  case NOTIFICATION_OK:
+    printf("NOTIFICATION OK: %*s\n", len, (char *)payload);
+    break;
+  case OBSERVE_OK: /* server accepeted observation request */
+    printf("OBSERVE_OK: %*s\n", len, (char *)payload);
+    break;
+  case OBSERVE_NOT_SUPPORTED:
+    printf("OBSERVE_NOT_SUPPORTED: %*s\n", len, (char *)payload);
+    obs = NULL;
+    break;
+  case ERROR_RESPONSE_CODE:
+    printf("ERROR_RESPONSE_CODE: %*s\n", len, (char *)payload);
+    obs = NULL;
+    break;
+  case NO_REPLY_FROM_SERVER:
+    printf("NO_REPLY_FROM_SERVER: "
+           "removing observe registration with token %x%x\n",
+           obs->token[0], obs->token[1]);
+    obs = NULL;
+    break;
+  }
+}
+/*----------------------------------------------------------------------------*/
+/*
+ * Toggle the observation of the remote resource
+ */
+
