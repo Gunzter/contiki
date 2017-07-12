@@ -116,9 +116,14 @@ PROCESS_THREAD(er_example_client, ev, data)
   oscoap_ctx_store_init();
   init_token_seq_store();
 
-	if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
+	/*if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
   	printf("Error: Could not create new Context!\n");
-	}
+	}*/
+  if(oscoap_derrive_ctx(master_secret, 35, NULL, 0,
+            COSE_Algorithm_AES_CCM_64_64_128, 0,
+            sender_id, 6, receiver_id, 6, 32) == NULL){
+    printf("Error: Could not derrive a new context!\n");
+  }
   /* OscoapCommonContext* oscoap_derrive_ctx(uint8_t* master_secret,
            uint8_t master_secret_len, uint8_t* master_salt, uint8_t master_salt_len, uint8_t alg, uint8_t hkdf_alg,
             uint8_t* sid, uint8_t sid_len, uint8_t* rid, uint8_t rid_len, uint8_t replay_window); */
@@ -131,6 +136,7 @@ PROCESS_THREAD(er_example_client, ev, data)
     printf("could not fetch cid\n");
   }else{
     printf("Context sucessfully added to DB!\n");
+    oscoap_print_context(c);
   }
  
   etimer_set(&et, 10 * CLOCK_SECOND);
@@ -187,6 +193,7 @@ void response_handler(void* response){
       break;
     case 3:
       test3_a_handler(response);
+      break;
     default:
       printf("Default handler\n");
   }

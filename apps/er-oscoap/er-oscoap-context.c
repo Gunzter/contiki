@@ -391,6 +391,7 @@ uint8_t set_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t seq){
   return 1;
 }
 
+#define DEBUG 1
 #if DEBUG
 void oscoap_print_context(OscoapCommonContext* ctx){
 

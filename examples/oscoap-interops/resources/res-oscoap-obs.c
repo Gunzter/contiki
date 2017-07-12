@@ -53,7 +53,7 @@ PERIODIC_RESOURCE(res_oscoap_obs,
                   NULL,
                   res_put_handler,
                   res_delete_handler,
-                  10 * CLOCK_SECOND,
+                  2 * CLOCK_SECOND,
                   res_periodic_handler);
 
 static int32_t obs_counter = 0;
@@ -99,7 +99,7 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   } else {
     REST.set_header_content_type(response, REST.type.TEXT_PLAIN);
     REST.set_response_payload(response, obs_content,
-                              snprintf(obs_content, MAX_PLUGFEST_PAYLOAD, "TICK %lu", obs_counter));
+                              snprintf(obs_content, MAX_PLUGFEST_PAYLOAD, "%lu", obs_counter));
   }
   /* A post_handler that handles subscriptions will be called for periodic resources by the REST framework. */
 }

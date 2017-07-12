@@ -174,7 +174,14 @@ void test4_a(uip_ipaddr_t *server_ipaddr, uint16_t server_port)
 //    obs = NULL;
 //  } else {
 //   printf("Starting observation\n");
+	printf("\n\nTest 4a: Starting!\n");
+
 	OscoapCommonContext* ctx = oscoap_find_ctx_by_rid(rid, 6);
+	if(ctx == NULL){
+		printf("PROBLEMAS!\n");
+	}
+
+	printf("Test 4a: Sending!\n");
     obs = oscoap_obs_request_registration(server_ipaddr, server_port,
                                         urls[4], test4_a_handler, NULL, ctx);
 
