@@ -52,10 +52,10 @@ static void res_post_handler(void *request, void *response, uint8_t *buffer, uin
  * preferred_size and offset, but must respect the REST_MAX_CHUNK_SIZE limit for the buffer.
  * If a smaller block size is requested for CoAP, the REST framework automatically splits the data.
  */
-RESOURCE(res_hello6,
+RESOURCE(res_hello7,
          "title=\"Hello world6: ?len=0..\";rt=\"Text\"",
          NULL,
-         res_post_handler,
+         NULL,
          res_put_handler,
          NULL);
 
@@ -80,15 +80,20 @@ res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     printf("TODO SEND ERRORS!\n");
   }
   /* The query string can be retrieved by rest_get_query() or parsed for its key-value pairs. */
+  uint8_t  *if_match;
+  if (REST.get_header_if_none_match(request)){
+	printf("if none match found\n");	
+  }
+  REST.get_header_if_match(request, &if_match);
 
   memcpy(buffer, message, length);
-  REST.set_header_content_type(response, REST.type.TEXT_PLAIN); /* text/plain is the default, hence this option could be omitted. */
-  const uint8_t etag = 0x6b;
+  //REST.set_header_content_type(response, REST.type.TEXT_PLAIN); /* text/plain is the default, hence this option could be omitted. */
+  const uint8_t etag = 0x7b;
 
-  REST.set_header_etag(response, &etag, 1);
+ // REST.set_header_etag(response, &etag, 1);
   REST.set_response_payload(response, buffer, length);
 }
-
+/*
 static void
 res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
@@ -107,4 +112,4 @@ res_post_handler(void *request, void *response, uint8_t *buffer, uint16_t prefer
   
   REST.set_response_status(response, REST.status.CREATED);
   //REST.set_header_location(response, "/location");
-}
+} */

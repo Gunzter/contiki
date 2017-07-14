@@ -513,7 +513,7 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
 
            
 
-  	size_t aad_len = OPT_COSE_AAD_length(&cose);
+    size_t aad_len = OPT_COSE_AAD_length(&cose);
     uint8_t aad_buffer[aad_len];
     aad_len = OPT_COSE_Build_AAD(&cose, aad_buffer);
     OPT_COSE_SetAAD(&cose, aad_buffer, aad_len);
@@ -524,7 +524,7 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     OPT_COSE_SetContent(&cose, plaintext_buffer, plaintext_len);
 
     if(OPT_COSE_Decrypt(&cose, ctx->RecipientContext->RecipientKey, CONTEXT_KEY_LEN)){
-      roll_back(ctx->RecipientContext);
+      roll_back(ctx->RecipientContext); //TODO This does not seem to work
       PRINTF("Error: Crypto Error!\n");
       coap_error_message = "Decryption failed";
       return BAD_REQUEST_4_00;

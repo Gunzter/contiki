@@ -5,7 +5,7 @@
 #include "opt-cose.h"
 
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -222,6 +222,18 @@ OscoapCommonContext* oscoap_find_ctx_by_cid(uint8_t* cid){
     return ctx_ptr;
 } */
 
+uint8_t bytes_compare(uint8_t* a_ptr, uint8_t a_len, uint8_t* b_ptr, uint8_t b_len){
+	if(a_len != b_len){
+		return 0;
+	}
+	
+	if( memcmp(a_ptr, b_ptr, a_len) == 0){
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
 OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, uint8_t rid_len){
     if(common_context_store == NULL){
       return NULL;
@@ -230,9 +242,10 @@ OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, uint8_t rid_len){
     PRINTF_HEX(rid, rid_len);
 
     OscoapCommonContext *ctx_ptr = common_context_store;
-    uint8_t cmp_len = MIN(rid_len, ctx_ptr->RecipientContext->RecipientIdLen);
-
-    while(memcmp(ctx_ptr->RecipientContext->RecipientId, rid, cmp_len) != 0){
+    //TODO SERIOUS Client finds Client00, fix FFS!
+    //uint8_t cmp_len = MIN(rid_len, ctx_ptr->RecipientContext->RecipientIdLen);
+	
+    while(bytes_compare(ctx_ptr->RecipientContext->RecipientId, ctx_ptr->RecipientContext->RecipientIdLen, rid, rid_len) == 0){
     PRINTF("tried:\n");
     PRINTF_HEX(ctx_ptr->RecipientContext->RecipientId, ctx_ptr->RecipientContext->RecipientIdLen);
       ctx_ptr = ctx_ptr->NextContext;
@@ -240,7 +253,7 @@ OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, uint8_t rid_len){
       if(ctx_ptr == NULL){
         return NULL;
       }
-      cmp_len = MIN(rid_len, ctx_ptr->RecipientContext->RecipientIdLen);
+    //  cmp_len = MIN(rid_len, ctx_ptr->RecipientContext->RecipientIdLen);
     }
     return ctx_ptr;
 }
@@ -253,9 +266,9 @@ OscoapCommonContext* oscoap_find_ctx_by_token(uint8_t* token, uint8_t token_len)
     PRINTF_HEX(token, token_len);
 
     OscoapCommonContext *ctx_ptr = common_context_store;
-    uint8_t cmp_len = MIN(token_len, ctx_ptr->SenderContext->TokenLen);
+   // uint8_t cmp_len = MIN(token_len, ctx_ptr->SenderContext->TokenLen);
 
-    while(memcmp(ctx_ptr->SenderContext->Token, token, cmp_len) != 0){
+    while(bytes_compare(ctx_ptr->SenderContext->Token, ctx_ptr->SenderContext->TokenLen,  token, token_len) == 0){
      PRINTF("tried:\n");
      PRINTF_HEX(ctx_ptr->SenderContext->Token, ctx_ptr->SenderContext->TokenLen);
       ctx_ptr = ctx_ptr->NextContext;
@@ -263,7 +276,7 @@ OscoapCommonContext* oscoap_find_ctx_by_token(uint8_t* token, uint8_t token_len)
       if(ctx_ptr == NULL){
         return NULL;
       }
-      cmp_len = MIN(token_len, ctx_ptr->SenderContext->TokenLen);
+    //  cmp_len = MIN(token_len, ctx_ptr->SenderContext->TokenLen);
     }
     return ctx_ptr;
 }
