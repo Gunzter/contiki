@@ -75,6 +75,10 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   }else {
     printf("NOT OSCOAP\n");
     printf("TODO SEND ERRORS!\n");
+    REST.set_response_status(response, REST.status.UNAUTHORIZED);
+    char error_msg[] = "Resource guarded by ogres, stay away!";
+    REST.set_response_payload(response, error_msg, strlen(error_msg));
+    return;
   }
   /* The query string can be retrieved by rest_get_query() or parsed for its key-value pairs. */
   if(REST.get_query_variable(request, "len", &len)) {
