@@ -1404,7 +1404,7 @@ oscoap_serializer(void *packet, uint8_t *buffer, uint8_t role)
                                "Uri-Path");
   }
   
-  if( role == ROLE_CONFIDENTIAL){
+  if( role == ROLE_COAP || role == ROLE_CONFIDENTIAL){
     PRINTF("Serialize content format: %d\n", coap_pkt->content_format);
     COAP_SERIALIZE_INT_OPTION(COAP_OPTION_CONTENT_FORMAT, content_format,
                             "Content-Format");
