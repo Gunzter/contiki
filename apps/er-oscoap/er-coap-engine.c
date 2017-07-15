@@ -277,6 +277,24 @@ coap_receive(void)
       PRINTF("Clearing transaction for manual response");
       coap_clear_transaction(transaction);
     } else {
+     /*
+      if(!(message->code >= COAP_GET && message->code <= COAP_DELETE) && erbium_status_code == OSCOAP_CRYPTO_ERROR) { //message is response
+        printf("ERROR IN RESPONSE %u: %s\n", erbium_status_code, coap_error_message);
+        coap_transaction_t * t = coap_get_transaction_by_mid(message->mid);
+        coap_clear_transaction(t);
+        coap_init_message(message, COAP_TYPE_ACK, NULL,
+                        message->mid);
+
+        coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
+                        uip_appdata, coap_serialize_message(message,
+                                                            uip_appdata));
+        if(t->callback) {
+          t->callback(t->callback_data, NULL);
+        }
+
+        return erbium_status_code;
+      }
+  */
       coap_message_type_t reply_type = COAP_TYPE_ACK;
 
       PRINTF("ERROR %u: %s\n", erbium_status_code, coap_error_message);
@@ -289,14 +307,38 @@ coap_receive(void)
         /* set to sendable error code */
         erbium_status_code = INTERNAL_SERVER_ERROR_5_00;
         /* reuse input buffer for error message */
+        printf("HERE!\n");
       }
-      coap_init_message(message, reply_type, erbium_status_code,
+     
+      //Respond with empty ACK
+    if(!(message->code >= COAP_GET && message->code <= COAP_DELETE)) {
+        printf("SPECIAL (OUR) CASE!!!!\n");
+        coap_transaction_t * t = coap_get_transaction_by_mid(message->mid);
+        restful_response_handler callback = t->callback;
+        void *callback_data = t->callback_data;
+        coap_clear_transaction(t);
+        
+        coap_init_message(message, COAP_TYPE_ACK, 0,
                         message->mid);
-      coap_set_payload(message, coap_error_message,
-                       strlen(coap_error_message));
-      coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
+        coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
                         uip_appdata, coap_serialize_message(message,
                                                             uip_appdata));
+        if(callback) {
+          printf("calling callback\n");
+          callback(callback_data, NULL);
+        }
+        return;
+      } else {
+        printf("USUAL CASE!!!\n");
+        coap_init_message(message, reply_type, erbium_status_code,
+                        message->mid);
+        coap_set_payload(message, coap_error_message,
+                       strlen(coap_error_message));
+        coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
+                        uip_appdata, coap_serialize_message(message,
+                                                            uip_appdata));
+      }
+      
     }
   }
 

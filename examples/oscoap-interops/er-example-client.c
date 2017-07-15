@@ -159,7 +159,41 @@ PROCESS_THREAD(er_example_client, ev, data)
           test3_a(request);
           break;
         case 4:
-          test4_a( &server_ipaddr, REMOTE_PORT);
+          //test4_a( &server_ipaddr, REMOTE_PORT);
+          printf("Skipping test 4a\n");
+          break;
+        case 5:
+          printf("Skipping test 5a\n");
+          break;
+        case 6:
+          test6_a(request);
+          break;
+        case 7:
+          test7_a(request);
+          break;
+        case 8:
+          test8_a(request);
+          break;
+        case 9:
+          test9_a(request);
+          break;
+        case 10:
+          test10_a(request);
+          break;
+        case 11:
+          test11_a(request);
+          break;
+        case 12:
+          test12_a(request);
+          break;
+        case 13:
+          test13_a(request);
+          break;
+        case 14:
+          test14_a(request);
+          break;
+        case 15:
+          test15_a(request);
           break;
         default:
           if(failed_tests == 0){
@@ -168,7 +202,7 @@ PROCESS_THREAD(er_example_client, ev, data)
             printf("%d tests failed! Go back and fix those :(\n", failed_tests);
           }
       }
-      if(test != 4){
+      if(test != 4 && test != 5){
         coap_set_token(request, token, 2);
         COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request, response_handler);
       }
@@ -181,7 +215,7 @@ PROCESS_THREAD(er_example_client, ev, data)
 }
 
 void response_handler(void* response){
-  printf("Response handler\n");
+  printf("Response handler test: %d\n", test);
   switch (test) {
     case 0:
       test0_a_handler(response);
@@ -194,6 +228,43 @@ void response_handler(void* response){
       break;
     case 3:
       test3_a_handler(response);
+      break;
+    case 4:
+      printf("Skipping Test 4a Handler\n");
+      break;
+    case 5:
+      printf("Skipping Test 5a Handler\n");
+      break;
+    case 6:
+      test6_a_handler(response);
+      break;
+    case 7:
+     test7_a_handler(response);
+      break;
+    case 8:
+      test8_a_handler(response);
+      break;
+    case 9:
+      test9_a_handler(response);
+      break;
+    case 10:
+      test10_a_handler(response);
+      break;
+    case 11:
+      test11_a_handler(response);
+      break;
+    case 12:
+      printf("TEST 12 Handler\n");
+      test12_a_handler(response);
+      break;
+    case 13:
+      test13_a_handler(response);
+      break;
+    case 14:
+      test14_a_handler(response);
+      break;
+    case 15:
+      test15_a_handler(response);
       break;
     default:
       printf("Default handler\n");
