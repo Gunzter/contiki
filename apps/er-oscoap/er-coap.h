@@ -86,8 +86,8 @@
 #define SET_OPTION(packet, opt) ((packet)->options[opt / OPTION_MAP_SIZE] |= 1 << (opt % OPTION_MAP_SIZE))
 #define IS_OPTION(packet, opt) ((packet)->options[opt / OPTION_MAP_SIZE] & (1 << (opt % OPTION_MAP_SIZE)))
 
-    /* parsed message struct */
-    typedef struct {
+/* parsed message struct */
+typedef struct {
       uint8_t *buffer; /* pointer to CoAP header / incoming packet buffer / memory to serialize packet */
 
       uint8_t version;
@@ -131,20 +131,20 @@
       uint16_t block1_size;
       uint32_t block1_offset;
       uint32_t size2;
-  uint32_t size1;
-  size_t uri_query_len;
-  const char *uri_query;
-  uint8_t if_none_match;
+      uint32_t size1;
+      size_t uri_query_len;
+      const char *uri_query;
+      uint8_t if_none_match;
 
-  //TODO this is for OSCOAP
-  size_t object_security_len;
-  uint8_t* object_security;
-  uip_ipaddr_t* ipaddr;
-  OscoapCommonContext* context;
+      uint16_t payload_len;
+      uint8_t *payload;
 
+      //This is for OSCOAP
+      size_t object_security_len;
+      uint8_t* object_security;
+      uip_ipaddr_t* ipaddr;
+      OscoapCommonContext* context;
 
-  uint16_t payload_len;
-  uint8_t *payload;
 } coap_packet_t;
 
 /* option format serialization */

@@ -69,14 +69,18 @@ void parse_int(uint64_t in, uint8_t* bytes, int out_len){
 	}
 }
 
-//TODO Fix this to work for the entire 32 bit range
 uint8_t to_bytes(uint32_t in, uint8_t* buffer){
-//	int outlen = log_2(in)/8 + ((in)%8 > 0) ? 1 : 0; //altough neat this does not work for in%8 == 0
-	uint8_t outlen = 1;
 //  PRINTF("in %" PRIu64 "\n", in);
-  if(in > 255){
+	uint8_t outlen = 1;
+
+  if(in > 255 && len <= 65535){
     outlen = 2;
+  } else if( in > 65535 && len <= 16777215){
+    outlen = 3;
+  } else if( len > 16777215 ){
+    outlen = 4;
   }
+
   parse_int(in, buffer, outlen);
 	return outlen;
 }
