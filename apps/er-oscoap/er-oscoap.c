@@ -73,11 +73,11 @@ uint8_t to_bytes(uint32_t in, uint8_t* buffer){
 //  PRINTF("in %" PRIu64 "\n", in);
 	uint8_t outlen = 1;
 
-  if(in > 255 && len <= 65535){
+  if(in > 255 && in <= 65535){
     outlen = 2;
-  } else if( in > 65535 && len <= 16777215){
+  } else if( in > 65535 && in <= 16777215){
     outlen = 3;
-  } else if( len > 16777215 ){
+  } else if( in > 16777215 ){
     outlen = 4;
   }
 
@@ -185,10 +185,17 @@ size_t oscoap_external_aad_size(coap_packet_t* coap_pkt ){
 
 
 
-void oscoap_increment_sender_seq(OscoapCommonContext* ctx){
+uint8_t oscoap_increment_sender_seq(OscoapCommonContext* ctx){
     ctx->SenderContext->Seq++; 
     PRINTF("NEW SENDER SEQ: %" PRIu32 "\n", ctx->SenderContext->Seq);
-   //TODO CHECKS FOR LIMITS
+    //uint_32 = max_seq 1 << (min(CONTEXT_INIT_VECT_LEN*8, 56) - 1) - 1;
+    
+    if(ctx->SenderContext->Seq == UINT32_MAX ){
+      return 0;
+    } else {
+      return 1;
+    }
+
 }
 
 uint32_t bytes_to_uint32(uint8_t* bytes, size_t len){
@@ -267,7 +274,7 @@ uint8_t oscoap_validate_receiver_seq(OscoapRecipientContext* ctx, opt_cose_encry
 /* Compose the nonce by XORing the static IV (Client Write IV) with
    the Partial IV parameter, received in the COSE Object.   */
 void create_nonce(uint8_t* iv, uint8_t* out, uint8_t* seq, int seq_len ){
-//TODO fix usage of magic numbers and add support for longer seq
+
   memcpy(out, iv, 7);
 	int i = 6;
 	int j = seq_len - 1;
@@ -363,7 +370,10 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   }
   if(coap_is_request(coap_pkt)){
       set_seq_from_token(coap_pkt->token, coap_pkt->token_len, coap_pkt->context->SenderContext->Seq);
-      oscoap_increment_sender_seq(coap_pkt->context);
+      if( !oscoap_increment_sender_seq(coap_pkt->context) ){
+        PRINTF("SEQ overrrun, send errors\n");
+        //TODO send errors
+      }
   } 
   OPT_COSE_SetExternalAAD(&cose, external_aad_buffer, external_aad_size);
 
@@ -528,7 +538,7 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
     OPT_COSE_SetContent(&cose, plaintext_buffer, plaintext_len);
 
     if(OPT_COSE_Decrypt(&cose, ctx->RecipientContext->RecipientKey, CONTEXT_KEY_LEN)){
-      roll_back(ctx->RecipientContext); //TODO This does not seem to work
+      roll_back(ctx->RecipientContext);
       PRINTF("Error: Crypto Error!\n");
       coap_error_message = "Decryption failed";
       return BAD_REQUEST_4_00;
