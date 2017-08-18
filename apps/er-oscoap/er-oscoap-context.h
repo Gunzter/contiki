@@ -18,6 +18,11 @@
 
 
 #define OSCOAP_SEQ_MAX 10000 //TODO calculate the real value
+//oscoap_ctx_t
+//oscoap_sender_ctx_t
+//oscoap_recipient_ctx_t
+//sender_key
+//sender_iv
 
 typedef struct OscoapSenderContext OscoapSenderContext;
 typedef struct OscoapRecipientContext OscoapRecipientContext;

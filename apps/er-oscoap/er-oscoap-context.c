@@ -242,8 +242,6 @@ OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, uint8_t rid_len){
     PRINTF_HEX(rid, rid_len);
 
     OscoapCommonContext *ctx_ptr = common_context_store;
-    //TODO SERIOUS Client finds Client00, fix FFS!
-    //uint8_t cmp_len = MIN(rid_len, ctx_ptr->RecipientContext->RecipientIdLen);
 	
     while(bytes_compare(ctx_ptr->RecipientContext->RecipientId, ctx_ptr->RecipientContext->RecipientIdLen, rid, rid_len) == 0){
     PRINTF("tried:\n");
@@ -253,7 +251,6 @@ OscoapCommonContext* oscoap_find_ctx_by_rid(uint8_t* rid, uint8_t rid_len){
       if(ctx_ptr == NULL){
         return NULL;
       }
-    //  cmp_len = MIN(rid_len, ctx_ptr->RecipientContext->RecipientIdLen);
     }
     return ctx_ptr;
 }
@@ -266,8 +263,7 @@ OscoapCommonContext* oscoap_find_ctx_by_token(uint8_t* token, uint8_t token_len)
     PRINTF_HEX(token, token_len);
 
     OscoapCommonContext *ctx_ptr = common_context_store;
-   // uint8_t cmp_len = MIN(token_len, ctx_ptr->SenderContext->TokenLen);
-
+  
     while(bytes_compare(ctx_ptr->SenderContext->Token, ctx_ptr->SenderContext->TokenLen,  token, token_len) == 0){
      PRINTF("tried:\n");
      PRINTF_HEX(ctx_ptr->SenderContext->Token, ctx_ptr->SenderContext->TokenLen);
@@ -276,7 +272,6 @@ OscoapCommonContext* oscoap_find_ctx_by_token(uint8_t* token, uint8_t token_len)
       if(ctx_ptr == NULL){
         return NULL;
       }
-    //  cmp_len = MIN(token_len, ctx_ptr->SenderContext->TokenLen);
     }
     return ctx_ptr;
 }
@@ -331,7 +326,6 @@ void list_remove(list_t list, void *item); // Remove a specific element from a l
 */
 void init_token_seq_store(){
   memb_init(&token_seq);
-  //list_init(list_t list);
 }
 
 uint8_t get_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t* seq){

@@ -188,9 +188,8 @@ size_t oscoap_external_aad_size(coap_packet_t* coap_pkt ){
 uint8_t oscoap_increment_sender_seq(OscoapCommonContext* ctx){
     ctx->SenderContext->Seq++; 
     PRINTF("NEW SENDER SEQ: %" PRIu32 "\n", ctx->SenderContext->Seq);
-    //uint_32 = max_seq 1 << (min(CONTEXT_INIT_VECT_LEN*8, 56) - 1) - 1;
     
-    if(ctx->SenderContext->Seq == UINT32_MAX ){
+    if(ctx->SenderContext->Seq >= OSCOAP_SEQ_MAX ){
       return 0;
     } else {
       return 1;
@@ -327,8 +326,6 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
 
   OPT_COSE_SetContent(&cose, plaintext_buffer, plaintext_size);
   OPT_COSE_SetAlg(&cose, COSE_Algorithm_AES_CCM_64_64_128);
-
-
 
 
   uint8_t seq_bytes_len;
