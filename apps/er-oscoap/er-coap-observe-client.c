@@ -344,7 +344,7 @@ coap_obs_request_registration(uip_ipaddr_t *addr, uint16_t port, char *uri,
 coap_observee_t *
 oscoap_obs_request_registration(uip_ipaddr_t *addr, uint16_t port, char *uri,
                               notification_callback_t notification_callback,
-                              void *data, OscoapCommonContext* ctx)
+                              void *data, oscoap_ctx_t* ctx)
 {
   coap_packet_t request[1];
   coap_transaction_t *t;

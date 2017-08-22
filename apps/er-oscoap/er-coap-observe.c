@@ -243,7 +243,7 @@ coap_notify_observers_sub(resource_t *resource, const char *subpath)
         oscoap_printf_hex(obs->token, obs->token_len);
         uint32_t seq;
         if(get_seq_from_token(obs->token, obs->token_len, &seq)){
-          OscoapCommonContext* ctx = oscoap_find_ctx_by_token(obs->token, obs->token_len);
+          oscoap_ctx_t* ctx = oscoap_find_ctx_by_token(obs->token, obs->token_len);
           notification->context = ctx;
           coap_set_header_object_security(notification);
         }

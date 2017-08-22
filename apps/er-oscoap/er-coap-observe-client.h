@@ -120,7 +120,7 @@ coap_observee_t *oscoap_obs_request_registration(uip_ipaddr_t *addr,
                                                uint16_t port, char *uri,
                                                notification_callback_t
                                                notification_callback,
-                                               void *data, OscoapCommonContext* ctx);
+                                               void *data, oscoap_ctx_t* ctx);
 
 /* TODO: this function may be moved to er-coap.c */
 uint8_t coap_generate_token(uint8_t **token_ptr);

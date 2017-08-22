@@ -143,7 +143,7 @@ typedef struct {
       size_t object_security_len;
       uint8_t* object_security;
       uip_ipaddr_t* ipaddr;
-      OscoapCommonContext* context;
+      oscoap_ctx_t* context;
 
 } coap_packet_t;
 
