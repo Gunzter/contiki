@@ -338,7 +338,7 @@ uint8_t real_sender_key[] = {0x21, 0x64, 0x42, 0xda, 0x60, 0x3c, 0x51, 0x59, 0x2
 uint8_t false_receiver_key[] =  {0xd1, 0xcb, 0x37, 0x10, 0x37, 0x15, 0x34, 0xa1, 0xca, 0x22, 0x4e, 0x19, 0xeb, 0x96, 0xe9, 0x6d };
 uint8_t real_receiver_key[] =  {0xd5, 0xcb, 0x37, 0x10, 0x37, 0x15, 0x34, 0xa1, 0xca, 0x22, 0x4e, 0x19, 0xeb, 0x96, 0xe9, 0x6d };
 
-OscoapCommonContext* context;
+oscoap_ctx_t* context;
 void test10_a(coap_packet_t* request){
   printf("\n\nTest 10a: Starting!\n");
   coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
@@ -350,7 +350,7 @@ void test10_a(coap_packet_t* request){
   if(request->context == NULL){
     printf("PROBLEMAS!\n");
   } 
-  request->context->SenderContext->SenderId = false_sender_id;
+  request->context->sender_context->sender_id = false_sender_id;
   context = request->context;
   printf("Test 10a: Sending!\n");
 }
@@ -372,7 +372,7 @@ void test10_a_handler(void* response){
     failed_tests++;
   }
 
-  context->SenderContext->SenderId = real_sender_id;
+  context->sender_context->sender_id = real_sender_id;
 } 
 
 void test11_a(coap_packet_t* request){
@@ -386,7 +386,7 @@ void test11_a(coap_packet_t* request){
   if(request->context == NULL){
     printf("PROBLEMAS!\n");
   } 
-  memcpy(request->context->SenderContext->SenderKey, false_sender_key, 16);
+  memcpy(request->context->sender_context->sender_key, false_sender_key, 16);
   context = request->context;
   printf("Test 11a: Sending!\n");
 }
@@ -407,7 +407,7 @@ void test11_a_handler(void* response){
 
     failed_tests++;
   }
-  memcpy(context->SenderContext->SenderKey, real_sender_key, 16);
+  memcpy(context->sender_context->sender_key, real_sender_key, 16);
 } 
 
 void test12_a(coap_packet_t* request){
@@ -421,7 +421,7 @@ void test12_a(coap_packet_t* request){
   if(request->context == NULL){
     printf("PROBLEMAS!\n");
   } 
-  memcpy(request->context->RecipientContext->RecipientKey, false_receiver_key, 16);
+  memcpy(request->context->recipient_context->recipient_key, false_receiver_key, 16);
   context = request->context;
   printf("Test 12a: Sending!\n");
 }
@@ -442,13 +442,13 @@ void test12_a_handler(void* response){
 
     failed_tests++;
   }
-  memcpy(context->RecipientContext->RecipientKey, real_receiver_key, 16);
+  memcpy(context->recipient_context->recipient_key, real_receiver_key, 16);
 } 
 
 void test13_a(coap_packet_t* request){
   printf("\n\nTest 13a: Starting!\n");
   printf("Restoring Recipient Key from Test 12a. \n");
-  memcpy(context->RecipientContext->RecipientKey, real_receiver_key, 16);
+  memcpy(context->recipient_context->recipient_key, real_receiver_key, 16);
   coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
   coap_set_header_uri_path(request, urls[1]);
 
@@ -458,7 +458,7 @@ void test13_a(coap_packet_t* request){
   if(request->context == NULL){
     printf("PROBLEMAS!\n");
   } 
-  request->context->SenderContext->Seq = 1;
+  request->context->sender_context->seq = 1;
   printf("Test 13a: Sending!\n");
 }
 
@@ -478,7 +478,7 @@ void test13_a_handler(void* response){
 
     failed_tests++;
   }
-context->SenderContext->Seq = 100;
+context->sender_context->seq = 100;
 } 
 
 void test14_a(coap_packet_t* request){
@@ -516,7 +516,7 @@ void test14_a_handler(void* response){
 
     failed_tests++;
   }
-context->SenderContext->Seq = 100;
+context->sender_context->seq = 100;
 } 
 
 void test15_a(coap_packet_t* request){
@@ -550,7 +550,7 @@ void test15_a_handler(void* response){
 
     failed_tests++;
   }
-context->SenderContext->Seq = 100;
+  context->sender_context->seq = 100;
 } 
 
 
@@ -564,7 +564,7 @@ void test4_a(uip_ipaddr_t *server_ipaddr, uint16_t server_port)
 //   printf("Starting observation\n");
 	printf("\n\nTest 4a: Starting!\n");
 
-	OscoapCommonContext* ctx = oscoap_find_ctx_by_rid(rid, 6);
+	oscoap_ctx_t* ctx = oscoap_find_ctx_by_rid(rid, 6);
 	if(ctx == NULL){
 		printf("PROBLEMAS!\n");
 	}

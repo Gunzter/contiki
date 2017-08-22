@@ -125,11 +125,11 @@ PROCESS_THREAD(er_example_client, ev, data)
             sender_id, 6, receiver_id, 6, 32) == NULL){
     printf("Error: Could not derrive a new context!\n");
   }
-  /* OscoapCommonContext* oscoap_derrive_ctx(uint8_t* master_secret,
+  /*oscoap_ctx_t* oscoap_derrive_ctx(uint8_t* master_secret,
            uint8_t master_secret_len, uint8_t* master_salt, uint8_t master_salt_len, uint8_t alg, uint8_t hkdf_alg,
             uint8_t* sid, uint8_t sid_len, uint8_t* rid, uint8_t rid_len, uint8_t replay_window); */
 	
-	OscoapCommonContext* c = NULL;
+	oscoap_ctx_t* c = NULL;
 
   c = oscoap_find_ctx_by_rid(rid2, 6);
   PRINTF("COAP max size %d\n", COAP_MAX_PACKET_SIZE);

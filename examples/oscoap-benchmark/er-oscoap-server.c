@@ -207,7 +207,7 @@ if(oscoap_derrive_ctx(master_secret, 35, NULL, 0, 12, 1,sender_id, 6, receiver_i
 //}
 
 
-OscoapCommonContext* c = NULL;
+oscoap_ctx_t* c = NULL;
 uint8_t rid2[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
 c = oscoap_find_ctx_by_rid(rid2, 6);
 PRINTF("COAP max size %d\n", COAP_MAX_PACKET_SIZE);
