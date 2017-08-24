@@ -227,7 +227,7 @@ oscoap_ctx_t* oscoap_find_ctx_by_cid(uint8_t* cid){
     return ctx_ptr;
 } */
 
-uint8_t bytes_compare(uint8_t* a_ptr, uint8_t a_len, uint8_t* b_ptr, uint8_t b_len){
+uint8_t bytes_equal(uint8_t* a_ptr, uint8_t a_len, uint8_t* b_ptr, uint8_t b_len){
 	if(a_len != b_len){
 		return 0;
 	}
@@ -248,7 +248,7 @@ oscoap_ctx_t* oscoap_find_ctx_by_rid(uint8_t* rid, uint8_t rid_len){
 
     oscoap_ctx_t *ctx_ptr = common_context_store;
 	
-    while(bytes_compare(ctx_ptr->recipient_context->recipient_id, ctx_ptr->recipient_context->recipient_id_len, rid, rid_len) == 0){
+    while(!bytes_equal(ctx_ptr->recipient_context->recipient_id, ctx_ptr->recipient_context->recipient_id_len, rid, rid_len)){
     PRINTF("tried:\n");
     PRINTF_HEX(ctx_ptr->recipient_context->recipient_id, ctx_ptr->recipient_context->recipient_id_len);
       ctx_ptr = ctx_ptr->next_context;
@@ -269,7 +269,7 @@ oscoap_ctx_t* oscoap_find_ctx_by_token(uint8_t* token, uint8_t token_len){
 
     oscoap_ctx_t *ctx_ptr = common_context_store;
   
-    while(bytes_compare(ctx_ptr->sender_context->token, ctx_ptr->sender_context->token_len,  token, token_len) == 0){
+    while(!bytes_equal(ctx_ptr->sender_context->token, ctx_ptr->sender_context->token_len,  token, token_len)){
      PRINTF("tried:\n");
      PRINTF_HEX(ctx_ptr->sender_context->token, ctx_ptr->sender_context->token_len);
       ctx_ptr = ctx_ptr->next_context;
@@ -336,16 +336,13 @@ void init_token_seq_store(){
 uint8_t get_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t* seq){
    token_seq_t* ptr = token_seq_store;
 
-   uint8_t cmp_len = MIN(token_len, ptr->token_len);
-
-  while(memcmp(ptr->token, token, cmp_len) != 0){
+  while(!bytes_equal(ptr->token, ptr->token_len,  token, token_len)){
     
     ptr = ptr->next;
     if(ptr == NULL){
       return 0; //TODO handle error
     }
 
-    cmp_len = MIN(token_len, ptr->token_len);
   }
 
   *seq = ptr->seq;
@@ -359,8 +356,8 @@ uint8_t get_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t* seq){
 void remove_seq_from_token(uint8_t* token, uint8_t token_len){
   token_seq_t* ptr = token_seq_store;
 
-  uint8_t cmp_len = MIN(token_len, ptr->token_len);
-  if(memcmp(ptr->token, token, cmp_len) == 0){ // first element
+
+  if(bytes_equal(ptr->token, ptr->token_len, token, token_len)){ // first element
     token_seq_store = ptr->next;
     memb_free(&token_seq, ptr);
     return;
@@ -372,8 +369,8 @@ void remove_seq_from_token(uint8_t* token, uint8_t token_len){
     if(ptr == NULL){
       return;
     }
-    cmp_len = MIN(token_len, ptr->next->token_len);
-    if(memcmp(ptr->next->token, token, cmp_len) == 0){
+    
+    if(bytes_equal(ptr->next->token, ptr->token_len, token, token_len)){
       token_seq_t* tmp = ptr->next;
       ptr->next = ptr->next->next;
       memb_free(&token_seq, tmp);
