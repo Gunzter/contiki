@@ -114,7 +114,7 @@ coap_init_communication_layer(uint16_t port)
   struct uip_udp_conn *server_conn = udp_new(NULL, 0, NULL);
   udp_bind(server_conn, port);
 
-  dtls_set_log_level(DTLS_LOG_DEBUG);
+  dtls_set_log_level(DTLS_LOG_EMERG); //was DTLS_LOD_DEBUG
 
   ctx = dtls_new_context(server_conn);
   if(ctx) {
