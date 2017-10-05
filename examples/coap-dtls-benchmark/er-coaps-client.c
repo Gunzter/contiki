@@ -57,11 +57,6 @@
 #define PRINTLLADDR(addr)
 #endif
 
-/* FIXME: This server address is hard-coded for Cooja and link-local for unconnected border router. */
-//#define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0x0212, 0x7402, 0x0002, 0x0202)      /* cooja2 */
-/* #define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xbbbb, 0, 0, 0, 0, 0, 0, 0x1) */
-
-//#define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0xc30c, 0, 0, 0x0001)      
 //#define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0xc30c, 0, 0, 0x0003) //z1  
 #define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0x0200, 0, 0, 0x0003) //wismote
 
@@ -69,7 +64,7 @@
 #define LOCAL_PORT      UIP_HTONS(COAP_DEFAULT_PORT + 1)
 #define REMOTE_PORT     UIP_HTONS(COAP_DEFAULT_PORT)
 
-#define TOGGLE_INTERVAL 30
+#define TOGGLE_INTERVAL 20
 
 PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
@@ -113,33 +108,20 @@ PROCESS_THREAD(er_example_client, ev, data)
   PRINTF("IP+UDP header: %u\n", UIP_IPUDPH_LEN);
   PRINTF("REST max chunk: %u\n", REST_MAX_CHUNK_SIZE);
  
-#if PLATFORM_HAS_BUTTON
-  SENSORS_ACTIVATE(button_sensor);
-  printf("Press a button to request %s\n", service_urls[uri_switch]);
-#endif
     
 
   etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
-
-#if PLATFORM_HAS_BUTTON
-  SENSORS_ACTIVATE(button_sensor);
-  printf("Press a button to request %s\n", service_urls[uri_switch]);
-#endif
 
   while(1) {
     PROCESS_YIELD();
   
 
     if(etimer_expired(&et)) {
-      printf("--Toggle timer--\n");
-
+      printf("Requesting %s\n", service_urls[1]);
       // prepare request, TID is set by COAP_BLOCKING_REQUEST() 
       coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
       coap_set_header_uri_path(request, service_urls[1]);
 
-      const char msg[] = "Toggle!";
-
-   //   coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
 
       PRINT6ADDR(&server_ipaddr);
       PRINTF(" : %u\n", UIP_HTONS(REMOTE_PORT));
@@ -147,33 +129,11 @@ PROCESS_THREAD(er_example_client, ev, data)
       COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request,
                             client_chunk_handler);
 
-      printf("\n--Done--\n");
     
 
       etimer_reset(&et);
-
-#if PLATFORM_HAS_BUTTON
-    } else if(ev == sensors_event && data == &button_sensor) {
-
-      /* send a request to notify the end of the process */
-
-      coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-      coap_set_header_uri_path(request, service_urls[uri_switch]);
-
-      printf("--Requesting %s--\n", service_urls[uri_switch]);
-
-      PRINT6ADDR(&server_ipaddr);
-      PRINTF(" : %u\n", UIP_HTONS(REMOTE_PORT));
-
-      COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request,
-                            client_chunk_handler);
-
-      printf("\n--Done--\n");
-
-      uri_switch = (uri_switch + 1) % NUMBER_OF_URLS;
-#endif
     }
-  }
+  } //while(1)
 
   PROCESS_END();
 }

@@ -57,11 +57,6 @@
 #define PRINTLLADDR(addr)
 #endif
 
-/* FIXME: This server address is hard-coded for Cooja and link-local for unconnected border router. */
-//#define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0x0212, 0x7402, 0x0002, 0x0202)      /* cooja2 */
-/* #define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xbbbb, 0, 0, 0, 0, 0, 0, 0x1) */
-
-//#define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0xc30c, 0, 0, 0x0001)      
 //#define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0xc30c, 0, 0, 0x0003) //z1  
 #define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0x0200, 0, 0, 0x0003) //wismote
 
@@ -69,9 +64,7 @@
 #define LOCAL_PORT      UIP_HTONS(COAP_DEFAULT_PORT + 1)
 #define REMOTE_PORT     UIP_HTONS(COAP_DEFAULT_PORT)
 
-#define TOGGLE_INTERVAL 5
-#define OBS_RESOURCE_URI "/observe"
-static coap_observee_t *obs;
+#define TOGGLE_INTERVAL 20
 
 PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
@@ -97,61 +90,6 @@ client_chunk_handler(void *response)
   printf("\n");
 }
 
-static void
-notification_callback(coap_observee_t *obs, void *notification,
-                      coap_notification_flag_t flag)
-{
-  int len = 0;
-  const uint8_t *payload = NULL;
-
-  printf("Notification handler\n");
-  printf("Observee URI: %s\n", obs->url);
-  if(notification) {
-    len = coap_get_payload(notification, &payload);
-  }
-  switch(flag) {
-  case NOTIFICATION_OK:
-    printf("NOTIFICATION OK: %*s\n", len, (char *)payload);
-    break;
-  case OBSERVE_OK: /* server accepeted observation request */
-    printf("OBSERVE_OK: %*s\n", len, (char *)payload);
-    break;
-  case OBSERVE_NOT_SUPPORTED:
-    printf("OBSERVE_NOT_SUPPORTED: %*s\n", len, (char *)payload);
-    obs = NULL;
-    break;
-  case ERROR_RESPONSE_CODE:
-    printf("ERROR_RESPONSE_CODE: %*s\n", len, (char *)payload);
-    obs = NULL;
-    break;
-  case NO_REPLY_FROM_SERVER:
-    printf("NO_REPLY_FROM_SERVER: "
-           "removing observe registration with token %x%x\n",
-           obs->token[0], obs->token[1]);
-    obs = NULL;
-    break;
-  }
-}
-/*----------------------------------------------------------------------------*/
-/*
- * Toggle the observation of the remote resource
- */
-void
-toggle_observation(void)
-{
-  if(obs) {
-    printf("Stopping observation\n");
-    coap_obs_remove_observee(obs);
-    obs = NULL;
-  } else {
-    printf("Starting observation\n");
-    obs = coap_obs_request_registration(&server_ipaddr, REMOTE_PORT,
-                                        OBS_RESOURCE_URI, notification_callback, NULL);
-  }
-}
-
-uint8_t counter = 0;
-
 PROCESS_THREAD(er_example_client, ev, data)
 {
   PROCESS_BEGIN();
@@ -176,7 +114,6 @@ PROCESS_THREAD(er_example_client, ev, data)
   
 
     if(etimer_expired(&et)) {
-      printf("--Toggle timer--\n");
       printf("Requesting %s\n", service_urls[1]);
       // prepare request, TID is set by COAP_BLOCKING_REQUEST() 
       coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
@@ -187,12 +124,6 @@ PROCESS_THREAD(er_example_client, ev, data)
 
       COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request,
                             client_chunk_handler);
-
-      counter++;
-      printf("\n--Done--\n");
-      if( counter % 2 == 0 ){
-        toggle_observation();
-      }
 
       etimer_reset(&et);
 

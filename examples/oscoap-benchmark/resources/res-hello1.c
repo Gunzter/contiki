@@ -61,7 +61,7 @@ static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
   const char *len = NULL;
-  printf("res handler\n");
+//  printf("res handler\n");
   /* Some data that has the length up to REST_MAX_CHUNK_SIZE. For more, see the chunk resource. */
   char const *const message = "Hello World! ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy";
   int length = 12; /*          |<-------->| */
@@ -71,10 +71,10 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     coap_packet_t* coap_response = (coap_packet_t*)response;
     coap_response->context = coap_request->context;
     coap_set_header_object_security(coap_response);
-    printf("OSCOAP!\n");
+  //  printf("OSCOAP!\n");
   }else {
-    printf("NOT OSCOAP\n");
-    printf("TODO SEND ERRORS!\n");
+  //  printf("NOT OSCOAP\n");
+  //  printf("TODO SEND ERRORS!\n");
   }
   /* The query string can be retrieved by rest_get_query() or parsed for its key-value pairs. */
   if(REST.get_query_variable(request, "len", &len)) {

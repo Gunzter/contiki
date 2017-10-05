@@ -66,54 +66,11 @@
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
 extern resource_t
-  res_hello1,
-  res_mirror,
-  res_chunks,
-  res_separate,
-  res_push,
-  res_event,
-	  res_sub,
-	  res_b1_sep_b2;
-#if PLATFORM_HAS_LEDS
-extern resource_t res_leds, res_toggle;
-#endif
-#if PLATFORM_HAS_LIGHT
-#include "dev/light-sensor.h"
-extern resource_t res_light;
-#endif
-#if PLATFORM_HAS_BATTERY
-#include "dev/battery-sensor.h"
-extern resource_t res_battery;
-#endif
-#if PLATFORM_HAS_TEMPERATURE
-#include "dev/temperature-sensor.h"
-extern resource_t res_temperature;
-#endif
-
-
-
-/*
-extern resource_t res_battery;
-#endif
-#if PLATFORM_HAS_RADIO
-#include "dev/radio-sensor.h"
-extern resource_t res_radio;
-#endif
-#if PLATFORM_HAS_SHT11
-#include "dev/sht11/sht11-sensor.h"
-extern resource_t res_sht11;
-#endif
-*/
+  res_hello1;
 
 uint8_t sender_id[] =  { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
 //uint8_t sender_key[] = {0xd5, 0xcb, 0x37, 0x10, 0x37, 0x15, 0x34, 0xa1, 0xca, 0x22, 0x4e, 0x19, 0xeb, 0x96, 0xe9, 0x6d };
 //uint8_t sender_iv[] = {0x20, 0x75, 0x0b, 0x95, 0xf9, 0x78, 0xc8 };
-
-uint8_t receiver_key[]  = {0x21, 0x64, 0x42, 0xDA, 0x60, 0x3C, 0x51, 0x59, 0x2D, 0xF4, 0xC3, 0xD0, 0xCD, 0x1D, 0x0D, 0x48};
-uint8_t receiver_iv[]   = {0x01, 0x53, 0xDD, 0xFE, 0xDE, 0x44, 0x19};
- 
-uint8_t sender_key[]  = {0xD5, 0xCB, 0x37, 0x10, 0x37, 0x15, 0x34, 0xA1, 0xCA, 0x22, 0x4E, 0x19, 0xEB, 0x96, 0xE9, 0x6D};
-uint8_t sender_iv[]   = {0x20, 0x75, 0x0B, 0x95, 0xF9, 0x78, 0xC8};
 
 uint8_t receiver_id[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
 //uint8_t receiver_key[] = {0x21, 0x64, 0x42, 0xda, 0x60, 0x3c, 0x51, 0x59, 0x2d, 0xf4, 0xc3, 0xd0, 0xcd, 0x1d, 0x0d, 0x48 };
@@ -168,29 +125,6 @@ PROCESS_THREAD(er_example_server, ev, data)
    * All static variables are the same for each URI path.
    */
   rest_activate_resource(&res_hello1, "hello/world");
-/*  rest_activate_resource(&res_mirror, "debug/mirror"); */
-/*  rest_activate_resource(&res_chunks, "test/chunks"); */
-/*  rest_activate_resource(&res_separate, "test/separate"); */
-  rest_activate_resource(&res_push, "test/push");
-/*  rest_activate_resource(&res_event, "sensors/button"); */
-/*  rest_activate_resource(&res_sub, "test/sub"); */
-/*  rest_activate_resource(&res_b1_sep_b2, "test/b1sepb2"); */
-#if PLATFORM_HAS_LEDS
-/*  rest_activate_resource(&res_leds, "actuators/leds"); */
- // rest_activate_resource(&res_toggle, "actuators/toggle");
-#endif
-#if PLATFORM_HAS_LIGHT
- // rest_activate_resource(&res_light, "sensors/light"); 
- // SENSORS_ACTIVATE(light_sensor);  
-#endif
-#if PLATFORM_HAS_BATTERY
- // rest_activate_resource(&res_battery, "sensors/battery");  
- // SENSORS_ACTIVATE(battery_sensor);  
-#endif
-#if PLATFORM_HAS_TEMPERATURE
-  //rest_activate_resource(&res_temperature, "sensors/temperature");  
- // SENSORS_ACTIVATE(temperature_sensor);  
-#endif
 
 
 oscoap_ctx_store_init();
@@ -198,7 +132,7 @@ oscoap_ctx_store_init();
 //Interop
 
 
-if(oscoap_derrive_ctx(master_secret, 35, NULL, 0, 12, 1,sender_id, 6, receiver_id, 6, 32) == 0) {
+if(oscoap_derrive_ctx(master_secret, 35, NULL, 0, 12, 1, sender_id, 6, receiver_id, 6, 32) == 0) {
   printf("Error: Could not derive new Context!\n");
 }
 
@@ -206,8 +140,9 @@ if(oscoap_derrive_ctx(master_secret, 35, NULL, 0, 12, 1,sender_id, 6, receiver_i
 //  printf("Error: Could not create new Context!\n");
 //}
 
-
+/*
 oscoap_ctx_t* c = NULL;
+
 uint8_t rid2[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
 c = oscoap_find_ctx_by_rid(rid2, 6);
 PRINTF("COAP max size %d\n", COAP_MAX_PACKET_SIZE);
@@ -216,24 +151,13 @@ if(c == NULL){
 } else {
   	PRINTF("Context sucessfully added to DB!\n");
   //  oscoap_print_context(c);
-}
+} */
 
 
 
 /* Define application-specific events here. */
   while(1) {
     PROCESS_WAIT_EVENT();
-#if PLATFORM_HAS_BUTTON
-    if(ev == sensors_event && data == &button_sensor) {
-      PRINTF("*******BUTTON*******\n");
-
-      /* Call the event_handler for this application-specific event. */
-      res_event.trigger();
-
-      /* Also call the separate response example handler. */
-      res_separate.resume();
-    }
-#endif /* PLATFORM_HAS_BUTTON */
   }                             /* while (1) */
 
   PROCESS_END();

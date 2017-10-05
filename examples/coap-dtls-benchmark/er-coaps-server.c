@@ -66,8 +66,7 @@
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
 extern resource_t
-  res_hello,
-  res_plugtest_obs;
+  res_hello;
 
 
 
@@ -103,24 +102,12 @@ PROCESS_THREAD(er_example_server, ev, data)
    * All static variables are the same for each URI path.
    */
   rest_activate_resource(&res_hello, "hello/world");
-  //rest_activate_resource(&res_plugtest_obs, "observe");
 
 
 
 /* Define application-specific events here. */
   while(1) {
     PROCESS_WAIT_EVENT();
-#if PLATFORM_HAS_BUTTON
-    if(ev == sensors_event && data == &button_sensor) {
-      PRINTF("*******BUTTON*******\n");
-
-      /* Call the event_handler for this application-specific event. */
-     // res_event.trigger();
-
-      /* Also call the separate response example handler. */
-    //  res_separate.resume();
-    }
-#endif /* PLATFORM_HAS_BUTTON */
   }                             /* while (1) */
 
   PROCESS_END();
