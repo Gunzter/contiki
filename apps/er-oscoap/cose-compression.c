@@ -1,6 +1,6 @@
 #include "cose-compression.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -15,6 +15,7 @@
 #endif /* OSCOAP_DEBUG */
 
 uint8_t cose_compress(opt_cose_encrypt_t* cose, uint8_t* buffer){
+	PRINTF("COSE Compression compress:\n");
 	uint8_t header = 0;
 	uint8_t i = 0;
 	if(cose->kid != NULL){
@@ -28,12 +29,14 @@ uint8_t cose_compress(opt_cose_encrypt_t* cose, uint8_t* buffer){
 
 	buffer[i] = header;
 	i++;
-	PRINTF("Header\n:");
+	PRINTF("Header: ");
 	PRINTF_HEX(&header, 1);
 
 	if(cose->partial_iv != NULL){
 		memcpy(&buffer[i], cose->partial_iv, cose->partial_iv_len);
 		i += cose->partial_iv_len;
+		PRINTF("Partial iv: ");
+		PRINTF_HEX(cose->partial_iv, cose->partial_iv_len);
 	}
 
 	if(cose->kid != NULL){
@@ -41,11 +44,15 @@ uint8_t cose_compress(opt_cose_encrypt_t* cose, uint8_t* buffer){
 		i++;
 		memcpy(&buffer[i], cose->kid, cose->kid_len);
 		i += cose->kid_len;
+		PRINTF("Key Id: ");
+		PRINTF_HEX(cose->kid, cose->kid_len);
 	}
 
 	if(cose->ciphertext != NULL){
 		memcpy(&buffer[i], cose->ciphertext, cose->ciphertext_len);
 		i += cose->ciphertext_len;
+		PRINTF("Ciphertext: ");
+		PRINTF_HEX(cose->ciphertext, cose->ciphertext_len);
 	}
 
 	return i;

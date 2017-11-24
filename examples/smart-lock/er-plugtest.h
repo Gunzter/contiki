@@ -31,49 +31,36 @@
 
 /**
  * \file
- *      Collection of default configuration values.
+ *      Erbium (Er) CoAP client example
  * \author
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef ER_COAP_CONF_H_
-#define ER_COAP_CONF_H_
+#ifndef __ER_PLUGTEST_H__
+#define __ER_PLUGTEST_H__
 
-/* Features that can be disabled to achieve smaller memory footprint */
-#define COAP_LINK_FORMAT_FILTERING     0
-#define COAP_PROXY_OPTION_PROCESSING   0
-
-/* Listening port for the CoAP REST Engine */
-#ifndef COAP_SERVER_PORT
-#define COAP_SERVER_PORT               COAP_DEFAULT_PORT
+#if !defined(CONTIKI_TARGET_NATIVE)
+#warning "Should only be compiled for native!"
 #endif
 
-#ifndef COAP_CORE_OBSERVE
-#define COAP_CORE_OBSERVE                    0
+#define DEBUG 0
+#if DEBUG
+#include <stdio.h>
+#define PRINTF(...) printf(__VA_ARGS__)
+#define PRINT6ADDR(addr) PRINTF("[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7], ((uint8_t *)addr)[8], ((uint8_t *)addr)[9], ((uint8_t *)addr)[10], ((uint8_t *)addr)[11], ((uint8_t *)addr)[12], ((uint8_t *)addr)[13], ((uint8_t *)addr)[14], ((uint8_t *)addr)[15])
+#define PRINTLLADDR(lladdr) PRINTF("[%02x:%02x:%02x:%02x:%02x:%02x]", (lladdr)->addr[0], (lladdr)->addr[1], (lladdr)->addr[2], (lladdr)->addr[3], (lladdr)->addr[4], (lladdr)->addr[5])
+#else
+#define PRINTF(...)
+#define PRINT6ADDR(addr)
+#define PRINTLLADDR(addr)
 #endif
 
+/* double expansion */
+#define TO_STRING2(x)  # x
+#define TO_STRING(x)  TO_STRING2(x)
 
-/* The number of concurrent messages that can be stored for retransmission in the transaction layer. */
-#ifndef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS     1
-#endif /* COAP_MAX_OPEN_TRANSACTIONS */
+#define MAX_PLUGFEST_PAYLOAD 64 + 1       /* +1 for the terminating zero, which is not transmitted */
+#define MAX_PLUGFEST_BODY    2048
+#define CHUNKS_TOTAL         2012
 
-/* Maximum number of failed request attempts before action */
-#ifndef COAP_MAX_ATTEMPTS
-#define COAP_MAX_ATTEMPTS              1
-#endif /* COAP_MAX_ATTEMPTS */
-
-/* Conservative size limit, as not all options have to be set at the same time. Check when Proxy-Uri option is used */
-#ifndef COAP_MAX_HEADER_SIZE    /*     Hdr                  CoF  If-Match         Obs Blo strings   */
-#define COAP_MAX_HEADER_SIZE           (4 + COAP_TOKEN_LEN + 3 + 1 + COAP_ETAG_LEN + 4 + 4 + 30)  /* 65 */
-#endif /* COAP_MAX_HEADER_SIZE */
-
-/* Number of observer slots (each takes abot xxx bytes) */
-#ifndef COAP_MAX_OBSERVERS
-#define COAP_MAX_OBSERVERS    COAP_MAX_OPEN_TRANSACTIONS - 1
-#endif /* COAP_MAX_OBSERVERS */
-
-/* Interval in notifies in which NON notifies are changed to CON notifies to check client. */
-#define COAP_OBSERVE_REFRESH_INTERVAL  20
-
-#endif /* ER_COAP_CONF_H_ */
+#endif /* __ER_PLUGTEST_H__ */

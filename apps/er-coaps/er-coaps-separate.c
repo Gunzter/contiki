@@ -39,10 +39,10 @@
 #include "sys/cc.h"
 #include <stdio.h>
 #include <string.h>
-#include "er-coap-separate.h"
-#include "er-coap-transactions.h"
+#include "er-coaps-separate.h"
+#include "er-coaps-transactions.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -66,11 +66,11 @@
  * then retry later.
  */
 void
-coap_separate_reject()
+coaps_separate_reject()
 {
   /* TODO: Accept string pointer for custom error message */
-  erbium_status_code = SERVICE_UNAVAILABLE_5_03;
-  coap_error_message = "AlreadyInUse";
+  erbium2_status_code = SERVICE_UNAVAILABLE_5_03;
+  coaps_error_message = "AlreadyInUse";
 }
 /*----------------------------------------------------------------------------*/
 /**
@@ -85,64 +85,65 @@ coap_separate_reject()
  * then retry later.
  */
 void
-coap_separate_accept(void *request, coap_separate_t *separate_store)
+coaps_separate_accept(void *request, coaps_separate_t *separate_store)
 {
-  coap_packet_t *const coap_req = (coap_packet_t *)request;
-  coap_transaction_t *const t = coap_get_transaction_by_mid(coap_req->mid);
+  coaps_packet_t *const coaps_req = (coaps_packet_t *)request;
+  coaps_transaction_t *const t = coaps_get_transaction_by_mid(coaps_req->mid);
 
-  PRINTF("Separate ACCEPT: /%.*s MID %u\n", coap_req->uri_path_len,
-         coap_req->uri_path, coap_req->mid);
+  PRINTF("Separate ACCEPT: /%.*s MID %u\n", coaps_req->uri_path_len,
+         coaps_req->uri_path, coaps_req->mid);
   if(t) {
     /* send separate ACK for CON */
-    if(coap_req->type == COAP_TYPE_CON) {
-      coap_packet_t ack[1];
+    if(coaps_req->type == COAP_TYPE_CON) {
+      coaps_packet_t ack[1];
 
       /* ACK with empty code (0) */
-      coap_init_message(ack, COAP_TYPE_ACK, 0, coap_req->mid);
+      coaps_init_message(ack, COAP_TYPE_ACK, 0, coaps_req->mid);
       /* serializing into IPBUF: Only overwrites header parts that are already parsed into the request struct */
-      coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
-                        (uip_appdata), coap_serialize_message(ack,
+      coaps_send_message(t->ctx, &UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
+                        (uip_appdata), coaps_serialize_message(ack,
                                                               uip_appdata));
     }
 
     /* store remote address */
     uip_ipaddr_copy(&separate_store->addr, &t->addr);
     separate_store->port = t->port;
+    separate_store->ctx = t->ctx;
 
     /* store correct response type */
     separate_store->type =
-      coap_req->type == COAP_TYPE_CON ? COAP_TYPE_CON : COAP_TYPE_NON;
-    separate_store->mid = coap_get_mid(); /* if it was a NON, we burned one MID in the engine... */
+      coaps_req->type == COAP_TYPE_CON ? COAP_TYPE_CON : COAP_TYPE_NON;
+    separate_store->mid = coaps_get_mid(); /* if it was a NON, we burned one MID in the engine... */
 
-    memcpy(separate_store->token, coap_req->token, coap_req->token_len);
-    separate_store->token_len = coap_req->token_len;
+    memcpy(separate_store->token, coaps_req->token, coaps_req->token_len);
+    separate_store->token_len = coaps_req->token_len;
 
-    separate_store->block1_num = coap_req->block1_num;
-    separate_store->block1_size = coap_req->block1_size;
+    separate_store->block1_num = coaps_req->block1_num;
+    separate_store->block1_size = coaps_req->block1_size;
 
-    separate_store->block2_num = coap_req->block2_num;
-    separate_store->block2_size = coap_req->block2_size > 0 ? MIN(COAP_MAX_BLOCK_SIZE, coap_req->block2_size) : COAP_MAX_BLOCK_SIZE;
+    separate_store->block2_num = coaps_req->block2_num;
+    separate_store->block2_size = coaps_req->block2_size > 0 ? MIN(COAP_MAX_BLOCK_SIZE, coaps_req->block2_size) : COAP_MAX_BLOCK_SIZE;
 
     /* signal the engine to skip automatic response and clear transaction by engine */
-    erbium_status_code = MANUAL_RESPONSE;
+    erbium2_status_code = MANUAL_RESPONSE;
   } else {
     PRINTF("ERROR: Response transaction for separate request not found!\n");
-    erbium_status_code = INTERNAL_SERVER_ERROR_5_00;
+    erbium2_status_code = INTERNAL_SERVER_ERROR_5_00;
   }
 }
 /*----------------------------------------------------------------------------*/
 void
-coap_separate_resume(void *response, coap_separate_t *separate_store,
+coaps_separate_resume(void *response, coaps_separate_t *separate_store,
                      uint8_t code)
 {
-  coap_init_message(response, separate_store->type, code,
+  coaps_init_message(response, separate_store->type, code,
                     separate_store->mid);
   if(separate_store->token_len) {
-    coap_set_token(response, separate_store->token,
+    coaps_set_token(response, separate_store->token,
                    separate_store->token_len);
   }
   if(separate_store->block1_size) {
-    coap_set_header_block1(response, separate_store->block1_num,
+    coaps_set_header_block1(response, separate_store->block1_num,
                            0, separate_store->block1_size);
   }
 }

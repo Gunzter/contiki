@@ -38,10 +38,11 @@
 
 #include "contiki.h"
 #include "contiki-net.h"
-#include "er-coap-transactions.h"
-#include "er-coap-observe.h"
+#include "er-coaps-transactions.h"
+#include "er-coaps-engine.h"
+#include "er-coaps-observe.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -54,7 +55,7 @@
 #endif
 
 /*---------------------------------------------------------------------------*/
-MEMB(transactions_memb, coap_transaction_t, COAP_MAX_OPEN_TRANSACTIONS);
+MEMB(transactions_memb, coaps_transaction_t, COAP_MAX_OPEN_TRANSACTIONS);
 LIST(transactions_list);
 
 static struct process *transaction_handler_process = NULL;
@@ -63,19 +64,20 @@ static struct process *transaction_handler_process = NULL;
 /*- Internal API ------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 void
-coap_register_as_transaction_handler()
+coaps_register_as_transaction_handler()
 {
   transaction_handler_process = PROCESS_CURRENT();
 }
-coap_transaction_t *
-coap_new_transaction(uint16_t mid, uip_ipaddr_t *addr, uint16_t port)
+coaps_transaction_t *
+coaps_new_transaction(uint16_t mid, uip_ipaddr_t *addr, uint16_t port)
 {
-  coap_transaction_t *t = memb_alloc(&transactions_memb);
+  coaps_transaction_t *t = memb_alloc(&transactions_memb);
 
   if(t) {
     t->mid = mid;
     t->retrans_counter = 0;
 
+    t->ctx = coaps_default_context;
     /* save client address */
     uip_ipaddr_copy(&t->addr, addr);
     t->port = port;
@@ -87,11 +89,17 @@ coap_new_transaction(uint16_t mid, uip_ipaddr_t *addr, uint16_t port)
 }
 /*---------------------------------------------------------------------------*/
 void
-coap_send_transaction(coap_transaction_t *t)
+coaps_set_transaction_context(coaps_transaction_t *t, context_t *ctx)
+{
+  t->ctx = ctx;
+}
+/*---------------------------------------------------------------------------*/
+void
+coaps_send_transaction(coaps_transaction_t *t)
 {
   PRINTF("Sending transaction %u\n", t->mid);
 
-  coap_send_message(&t->addr, t->port, t->packet, t->packet_len);
+  coaps_send_message(t->ctx, &t->addr, t->port, t->packet, t->packet_len);
 
   if(COAP_TYPE_CON ==
      ((COAP_HEADER_TYPE_MASK & t->packet[0]) >> COAP_HEADER_TYPE_POSITION)) {
@@ -121,26 +129,26 @@ coap_send_transaction(coap_transaction_t *t)
     } else {
       /* timed out */
       PRINTF("Timeout\n");
-      restful_response_handler callback = t->callback;
+      rest2ful_response_handler callback = t->callback;
       void *callback_data = t->callback_data;
 
       /* handle observers */
 #if COAP_CORE_OBSERVE
-      coap_remove_observer_by_client(&t->addr, t->port);
+      coaps_remove_observer_by_client(&t->addr, t->port);
 #endif
-      coap_clear_transaction(t);
+      coaps_clear_transaction(t);
 
       if(callback) {
         callback(callback_data, NULL);
       }
     }
   } else {
-    coap_clear_transaction(t);
+    coaps_clear_transaction(t);
   }
 }
 /*---------------------------------------------------------------------------*/
 void
-coap_clear_transaction(coap_transaction_t *t)
+coaps_clear_transaction(coaps_transaction_t *t)
 {
   if(t) {
     PRINTF("Freeing transaction %u: %p\n", t->mid, t);
@@ -150,12 +158,12 @@ coap_clear_transaction(coap_transaction_t *t)
     memb_free(&transactions_memb, t);
   }
 }
-coap_transaction_t *
-coap_get_transaction_by_mid(uint16_t mid)
+coaps_transaction_t *
+coaps_get_transaction_by_mid(uint16_t mid)
 {
-  coap_transaction_t *t = NULL;
+  coaps_transaction_t *t = NULL;
 
-  for(t = (coap_transaction_t *)list_head(transactions_list); t; t = t->next) {
+  for(t = (coaps_transaction_t *)list_head(transactions_list); t; t = t->next) {
     if(t->mid == mid) {
       PRINTF("Found transaction for MID %u: %p\n", t->mid, t);
       return t;
@@ -165,15 +173,15 @@ coap_get_transaction_by_mid(uint16_t mid)
 }
 /*---------------------------------------------------------------------------*/
 void
-coap_check_transactions()
+coaps_check_transactions()
 {
-  coap_transaction_t *t = NULL;
+  coaps_transaction_t *t = NULL;
 
-  for(t = (coap_transaction_t *)list_head(transactions_list); t; t = t->next) {
+  for(t = (coaps_transaction_t *)list_head(transactions_list); t; t = t->next) {
     if(etimer_expired(&t->retrans_timer)) {
       ++(t->retrans_counter);
       PRINTF("Retransmitting %u (%u)\n", t->mid, t->retrans_counter);
-      coap_send_transaction(t);
+      coaps_send_transaction(t);
     }
   }
 }

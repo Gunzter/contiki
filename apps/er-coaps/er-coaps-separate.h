@@ -31,49 +31,40 @@
 
 /**
  * \file
- *      Collection of default configuration values.
+ *      CoAP module for separate responses.
  * \author
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef ER_COAP_CONF_H_
-#define ER_COAP_CONF_H_
+#ifndef COAP_SEPARATE_H_
+#define COAP_SEPARATE_H_
 
-/* Features that can be disabled to achieve smaller memory footprint */
-#define COAP_LINK_FORMAT_FILTERING     0
-#define COAP_PROXY_OPTION_PROCESSING   0
+#include "er-coaps.h"
 
-/* Listening port for the CoAP REST Engine */
-#ifndef COAP_SERVER_PORT
-#define COAP_SERVER_PORT               COAP_DEFAULT_PORT
-#endif
+typedef struct coaps_separate {
 
-#ifndef COAP_CORE_OBSERVE
-#define COAP_CORE_OBSERVE                    0
-#endif
+  uip_ipaddr_t addr;
+  uint16_t port;
+  context_t * ctx;
 
+  coaps_message_type_t type;
+  uint16_t mid;
 
-/* The number of concurrent messages that can be stored for retransmission in the transaction layer. */
-#ifndef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS     1
-#endif /* COAP_MAX_OPEN_TRANSACTIONS */
+  uint8_t token_len;
+  uint8_t token[COAP_TOKEN_LEN];
 
-/* Maximum number of failed request attempts before action */
-#ifndef COAP_MAX_ATTEMPTS
-#define COAP_MAX_ATTEMPTS              1
-#endif /* COAP_MAX_ATTEMPTS */
+  uint32_t block1_num;
+  uint16_t block1_size;
 
-/* Conservative size limit, as not all options have to be set at the same time. Check when Proxy-Uri option is used */
-#ifndef COAP_MAX_HEADER_SIZE    /*     Hdr                  CoF  If-Match         Obs Blo strings   */
-#define COAP_MAX_HEADER_SIZE           (4 + COAP_TOKEN_LEN + 3 + 1 + COAP_ETAG_LEN + 4 + 4 + 30)  /* 65 */
-#endif /* COAP_MAX_HEADER_SIZE */
+  uint32_t block2_num;
+  uint16_t block2_size;
+} coaps_separate_t;
 
-/* Number of observer slots (each takes abot xxx bytes) */
-#ifndef COAP_MAX_OBSERVERS
-#define COAP_MAX_OBSERVERS    COAP_MAX_OPEN_TRANSACTIONS - 1
-#endif /* COAP_MAX_OBSERVERS */
+int coaps_separate_handler(resource2_t *resource, void *request,
+                          void *response);
+void coaps_separate_reject(void);
+void coaps_separate_accept(void *request, coaps_separate_t *separate_store);
+void coaps_separate_resume(void *response, coaps_separate_t *separate_store,
+                          uint8_t code);
 
-/* Interval in notifies in which NON notifies are changed to CON notifies to check client. */
-#define COAP_OBSERVE_REFRESH_INTERVAL  20
-
-#endif /* ER_COAP_CONF_H_ */
+#endif /* COAP_SEPARATE_H_ */

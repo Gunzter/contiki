@@ -40,12 +40,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "er-coap-engine.h"
-#include "er-coap.h"
-#include "hw_interface.h"
-#include "er-oscoap.h"
+#include "er-coaps-engine.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -57,28 +54,29 @@
 #define PRINTLLADDR(addr)
 #endif
 
-PROCESS(coap_engine, "CoAP Engine");
+PROCESS(coaps_engine, "CoAPS Engine");
 
 /*---------------------------------------------------------------------------*/
 /*- Variables ---------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 static service_callback_t service_cbk = NULL;
+context_t * coaps_default_context = NULL;
 
 /*---------------------------------------------------------------------------*/
 /*- Internal API ------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-static int
-coap_receive(void)
+int
+coaps_receive(context_t * ctx)
 {
-  erbium_status_code = NO_ERROR;
+  erbium2_status_code = NO_ERROR;
 
-  PRINTF("handle_incoming_data(): received uip_datalen=%u \n",
+  PRINTF("coaps handle_incoming_data(): received uip_datalen=%u \n",
          (uint16_t)uip_datalen());
 
   /* static declaration reduces stack peaks and program code size */
-  static coap_packet_t message[1]; /* this way the packet can be treated as pointer as usual */
-  static coap_packet_t response[1];
-  static coap_transaction_t *transaction = NULL;
+  static coaps_packet_t message[1]; /* this way the packet can be treated as pointer as usual */
+  static coaps_packet_t response[1];
+  static coaps_transaction_t *transaction = NULL;
 
   if(uip_newdata()) {
 
@@ -86,12 +84,11 @@ coap_receive(void)
     PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
     PRINTF(":%u\n  Length: %u\n", uip_ntohs(UIP_UDP_BUF->srcport),
            uip_datalen());
-    oscoap_printf_hex(uip_appdata, uip_datalen());
 
-    erbium_status_code =
-     oscoap_parser(message, uip_appdata, uip_datalen(), ROLE_COAP);
+    erbium2_status_code =
+      coaps_parse_message(message, uip_appdata, uip_datalen());
 
-    if(erbium_status_code == NO_ERROR) {
+    if(erbium2_status_code == NO_ERROR) {
 
       /*TODO duplicates suppression, if required by application */
 
@@ -105,28 +102,29 @@ coap_receive(void)
 
         /* use transaction buffer for response to confirmable request */
         if((transaction =
-              coap_new_transaction(message->mid, &UIP_IP_BUF->srcipaddr,
+              coaps_new_transaction(message->mid, &UIP_IP_BUF->srcipaddr,
                                    UIP_UDP_BUF->srcport))) {
           uint32_t block_num = 0;
           uint16_t block_size = COAP_MAX_BLOCK_SIZE;
           uint32_t block_offset = 0;
           int32_t new_offset = 0;
+          coaps_set_transaction_context(transaction, ctx);
 
           /* prepare response */
           if(message->type == COAP_TYPE_CON) {
             /* reliable CON requests are answered with an ACK */
-            coap_init_message(response, COAP_TYPE_ACK, CONTENT_2_05,
+            coaps_init_message(response, COAP_TYPE_ACK, CONTENT_2_05,
                               message->mid);
           } else {
             /* unreliable NON requests are answered with a NON as well */
-            coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
-                              coap_get_mid());
+            coaps_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
+                              coaps_get_mid());
             /* mirror token */
           } if(message->token_len) {
-            coap_set_token(response, message->token, message->token_len);
+            coaps_set_token(response, message->token, message->token_len);
             /* get offset for blockwise transfers */
           }
-          if(coap_get_header_block2
+          if(coaps_get_header_block2
                (message, &block_num, NULL, &block_size, &block_offset)) {
             PRINTF("Blockwise: block request %lu (%u/%u) @ %lu bytes\n",
                    block_num, block_size, COAP_MAX_BLOCK_SIZE, block_offset);
@@ -142,9 +140,9 @@ coap_receive(void)
                  (message, response, transaction->packet + COAP_MAX_HEADER_SIZE,
                  block_size, &new_offset)) {
 
-              if(erbium_status_code == NO_ERROR) {
+              if(erbium2_status_code == NO_ERROR) {
 
-                /* TODO coap_handle_blockwise(request, response, start_offset, end_offset); */
+                /* TODO coaps_handle_blockwise(request, response, start_offset, end_offset); */
 
                 /* resource is unaware of Block1 */
                 if(IS_OPTION(message, COAP_OPTION_BLOCK1)
@@ -152,8 +150,8 @@ coap_receive(void)
                    && !IS_OPTION(response, COAP_OPTION_BLOCK1)) {
                   PRINTF("Block1 NOT IMPLEMENTED\n");
 
-                  erbium_status_code = NOT_IMPLEMENTED_5_01;
-                  coap_error_message = "NoBlock1Support";
+                  erbium2_status_code = NOT_IMPLEMENTED_5_01;
+                  coaps_error_message = "NoBlock1Support";
 
                   /* client requested Block2 transfer */
                 } else if(IS_OPTION(message, COAP_OPTION_BLOCK2)) {
@@ -168,13 +166,13 @@ coap_receive(void)
                         ("handle_incoming_data(): block_offset >= response->payload_len\n");
 
                       response->code = BAD_OPTION_4_02;
-                      coap_set_payload(response, "BlockOutOfScope", 15); /* a const char str[] and sizeof(str) produces larger code size */
+                      coaps_set_payload(response, "BlockOutOfScope", 15); /* a const char str[] and sizeof(str) produces larger code size */
                     } else {
-                      coap_set_header_block2(response, block_num,
+                      coaps_set_header_block2(response, block_num,
                                              response->payload_len -
                                              block_offset > block_size,
                                              block_size);
-                      coap_set_payload(response,
+                      coaps_set_payload(response,
                                        response->payload + block_offset,
                                        MIN(response->payload_len -
                                            block_offset, block_size));
@@ -184,13 +182,13 @@ coap_receive(void)
                   } else {
                     PRINTF("Blockwise: blockwise resource, new offset %ld\n",
                            new_offset);
-                    coap_set_header_block2(response, block_num,
+                    coaps_set_header_block2(response, block_num,
                                            new_offset != -1
                                            || response->payload_len >
                                            block_size, block_size);
 
                     if(response->payload_len > block_size) {
-                      coap_set_payload(response, response->payload,
+                      coaps_set_payload(response, response->payload,
                                        block_size);
                     }
                   } /* if(resource aware of blockwise) */
@@ -201,9 +199,9 @@ coap_receive(void)
                     ("Blockwise: no block option for blockwise resource, using block size %u\n",
                     COAP_MAX_BLOCK_SIZE);
 
-                  coap_set_header_block2(response, 0, new_offset != -1,
+                  coaps_set_header_block2(response, 0, new_offset != -1,
                                          COAP_MAX_BLOCK_SIZE);
-                  coap_set_payload(response, response->payload,
+                  coaps_set_payload(response, response->payload,
                                    MIN(response->payload_len,
                                        COAP_MAX_BLOCK_SIZE));
                 } /* blockwise transfer handling */
@@ -211,21 +209,21 @@ coap_receive(void)
                 /* successful service callback */
                 /* serialize response */
             }
-            if(erbium_status_code == NO_ERROR) {
-              if((transaction->packet_len = coap_serialize_message(response,
+            if(erbium2_status_code == NO_ERROR) {
+              if((transaction->packet_len = coaps_serialize_message(response,
                                                                    transaction->
                                                                    packet)) ==
                  0) {
-                erbium_status_code = PACKET_SERIALIZATION_ERROR;
+                erbium2_status_code = PACKET_SERIALIZATION_ERROR;
               }
             }
           } else {
-            erbium_status_code = NOT_IMPLEMENTED_5_01;
-            coap_error_message = "NoServiceCallbck"; /* no 'a' to fit into 16 bytes */
+            erbium2_status_code = NOT_IMPLEMENTED_5_01;
+            coaps_error_message = "NoServiceCallbck"; /* no 'a' to fit into 16 bytes */
           } /* if(service callback) */
         } else {
-          erbium_status_code = SERVICE_UNAVAILABLE_5_03;
-          coap_error_message = "NoFreeTraBuffer";
+          erbium2_status_code = SERVICE_UNAVAILABLE_5_03;
+          coaps_error_message = "NoFreeTraBuffer";
         } /* if(transaction buffer) */
 
         /* handle responses */
@@ -233,7 +231,7 @@ coap_receive(void)
 
         if(message->type == COAP_TYPE_CON && message->code == 0) {
           PRINTF("Received Ping\n");
-          erbium_status_code = PING_RESPONSE;
+          erbium2_status_code = PING_RESPONSE;
         } else if(message->type == COAP_TYPE_ACK) {
           /* transactions are closed through lookup below */
           PRINTF("Received ACK\n");
@@ -241,18 +239,17 @@ coap_receive(void)
           PRINTF("Received RST\n");
           /* cancel possible subscriptions */
 #if COAP_CORE_OBSERVE
-          coap_remove_observer_by_mid(&UIP_IP_BUF->srcipaddr,
+          coaps_remove_observer_by_mid(&UIP_IP_BUF->srcipaddr,
                                       UIP_UDP_BUF->srcport, message->mid);
 #endif
         }
 
-
-        if((transaction = coap_get_transaction_by_mid(message->mid))) {
+        if((transaction = coaps_get_transaction_by_mid(message->mid))) {
           /* free transaction memory before callback, as it may create a new transaction */
-          restful_response_handler callback = transaction->callback;
+          rest2ful_response_handler callback = transaction->callback;
           void *callback_data = transaction->callback_data;
 
-          coap_clear_transaction(transaction);
+          coaps_clear_transaction(transaction);
 
           /* check if someone registered for the response */
           if(callback) {
@@ -263,142 +260,102 @@ coap_receive(void)
         transaction = NULL;
 
 #if COAP_OBSERVE_CLIENT
-        /* if observe notification */
+	/* if observe notification */
         if((message->type == COAP_TYPE_CON || message->type == COAP_TYPE_NON)
-           && IS_OPTION(message, COAP_OPTION_OBSERVE)) {
+              && IS_OPTION(message, COAP_OPTION_OBSERVE)) {
           PRINTF("Observe [%u]\n", message->observe);
-          coap_handle_notification(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
-                                   message);
+          coaps_handle_notification(ctx, &UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
+              message);
         }
 #endif /* COAP_OBSERVE_CLIENT */
       } /* request or response */
     } /* parsed correctly */
 
     /* if(parsed correctly) */
-    if(erbium_status_code == NO_ERROR) {
-      printf("green led on\n");
-      set_led_green(1);
+    if(erbium2_status_code == NO_ERROR) {
       if(transaction) {
-        coap_send_transaction(transaction);
+        coaps_send_transaction(transaction);
       }
-    } else if(erbium_status_code == MANUAL_RESPONSE) {
+    } else if(erbium2_status_code == MANUAL_RESPONSE) {
       PRINTF("Clearing transaction for manual response");
-      coap_clear_transaction(transaction);
+      coaps_clear_transaction(transaction);
     } else {
-     /*
-      if(!(message->code >= COAP_GET && message->code <= COAP_DELETE) && erbium_status_code == OSCOAP_CRYPTO_ERROR) { //message is response
-        printf("ERROR IN RESPONSE %u: %s\n", erbium_status_code, coap_error_message);
-        coap_transaction_t * t = coap_get_transaction_by_mid(message->mid);
-        coap_clear_transaction(t);
-        coap_init_message(message, COAP_TYPE_ACK, NULL,
-                        message->mid);
+      coaps_message_type_t reply_type = COAP_TYPE_ACK;
 
-        coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
-                        uip_appdata, coap_serialize_message(message,
-                                                            uip_appdata));
-        if(t->callback) {
-          t->callback(t->callback_data, NULL);
-        }
+      PRINTF("ERROR %u: %s\n", erbium2_status_code, coaps_error_message);
+      coaps_clear_transaction(transaction);
 
-        return erbium_status_code;
-      }
-  */
-      coap_message_type_t reply_type = COAP_TYPE_ACK;
-
-      PRINTF("ERROR %u: %s\n", erbium_status_code, coap_error_message);
-      coap_clear_transaction(transaction);
-
-      if(erbium_status_code == PING_RESPONSE) {
-        erbium_status_code = 0;
+      if(erbium2_status_code == PING_RESPONSE) {
+        erbium2_status_code = 0;
         reply_type = COAP_TYPE_RST;
-      } else if(erbium_status_code >= 192) {
+      } else if(erbium2_status_code >= 192) {
         /* set to sendable error code */
-        erbium_status_code = INTERNAL_SERVER_ERROR_5_00;
+        erbium2_status_code = INTERNAL_SERVER_ERROR_5_00;
         /* reuse input buffer for error message */
       }
-     
-      //Respond with empty ACK
-    if(!(message->code >= COAP_GET && message->code <= COAP_DELETE)) {
-        coap_transaction_t * t = coap_get_transaction_by_mid(message->mid);
-        restful_response_handler callback = t->callback;
-        void *callback_data = t->callback_data;
-        coap_clear_transaction(t);
-        
-        coap_init_message(message, COAP_TYPE_ACK, 0,
+      coaps_init_message(message, reply_type, erbium2_status_code,
                         message->mid);
-        coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
-                        uip_appdata, coap_serialize_message(message,
+      coaps_set_payload(message, coaps_error_message,
+                       strlen(coaps_error_message));
+      coaps_send_message(ctx, &UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
+                        uip_appdata, coaps_serialize_message(message,
                                                             uip_appdata));
-        if(callback) {
-          callback(callback_data, NULL);
-        }
-        return;
-      } else {
-        printf("red led on\n");
-        set_led_red(1);
-        coap_init_message(message, reply_type, erbium_status_code,
-                        message->mid);
-        coap_set_payload(message, coap_error_message,
-                       strlen(coap_error_message));
-        coap_send_message(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
-                        uip_appdata, coap_serialize_message(message,
-                                                            uip_appdata));
-      }
-      
     }
   }
 
   /* if(new data) */
-  return erbium_status_code;
+  return erbium2_status_code;
 }
 /*---------------------------------------------------------------------------*/
 void
-coap_init_engine(void)
+coaps_init_engine(void)
 {
-  process_start(&coap_engine, NULL);
+  process_start(&coaps_engine, NULL);
 }
 /*---------------------------------------------------------------------------*/
 void
-coap_set_service_callback(service_callback_t callback)
+coaps_set_service_callback(service_callback_t callback)
 {
   service_cbk = callback;
 }
 /*---------------------------------------------------------------------------*/
 rest_resource_flags_t
-coap_get_rest_method(void *packet)
+coaps_get_rest_method(void *packet)
 {
   return (rest_resource_flags_t)(1 <<
-                                 (((coap_packet_t *)packet)->code - 1));
+                                 (((coaps_packet_t *)packet)->code - 1));
 }
 /*---------------------------------------------------------------------------*/
 /*- Server Part -------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 
 /* the discover resource is automatically included for CoAP */
-extern resource_t res_well_known_core;
+extern resource2_t res_well_known_core2;
 #ifdef WITH_DTLS
-extern resource_t res_dtls;
+extern resource2_t res_dtls;
 #endif
 
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(coap_engine, ev, data)
+PROCESS_THREAD(coaps_engine, ev, data)
 {
   PROCESS_BEGIN();
-  PRINTF("Starting %s receiver...\n", coap_rest_implementation.name);
+  PRINTF("Starting %s receiver...\n", coap_rest2_implementation.name);
 
-//  rest_activate_resource(&res_well_known_core, ".well-known/core");
+#if WITH_WELL_KNOWN_CORE
+  rest2_activate_resource(&res_well_known_core2, ".well-known/core");
+#endif
 
-  coap_register_as_transaction_handler();
-  coap_init_connection(SERVER_LISTEN_PORT);
+  coaps_register_as_transaction_handler();
+  coaps_init_connection(SERVER_LISTEN_PORT);
 
   while(1) {
     PROCESS_YIELD();
 
     if(ev == tcpip_event) {
-      coap_receive();
+      coaps_handle_receive(coaps_default_context);
     } else if(ev == PROCESS_EVENT_TIMER) {
       /* retransmissions are handled here */
-      coap_check_transactions();
+      coaps_check_transactions();
     }
   } /* while (1) */
 
@@ -408,18 +365,18 @@ PROCESS_THREAD(coap_engine, ev, data)
 /*- Client Part -------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 void
-coap_blocking_request_callback(void *callback_data, void *response)
+coaps_blocking_request_callback(void *callback_data, void *response)
 {
   struct request_state_t *state = (struct request_state_t *)callback_data;
 
-  state->response = (coap_packet_t *)response;
+  state->response = (coaps_packet_t *)response;
   process_poll(state->process);
 }
 /*---------------------------------------------------------------------------*/
-PT_THREAD(coap_blocking_request
+PT_THREAD(coaps_blocking_request
             (struct request_state_t *state, process_event_t ev,
-            uip_ipaddr_t *remote_ipaddr, uint16_t remote_port,
-            coap_packet_t *request,
+            context_t *ctx, uip_ipaddr_t *remote_ipaddr, uint16_t remote_port,
+            coaps_packet_t *request,
             blocking_response_handler request_callback))
 {
   PT_BEGIN(&state->pt);
@@ -437,22 +394,23 @@ PT_THREAD(coap_blocking_request
   block_error = 0;
 
   do {
-    request->mid = coap_get_mid();
-    if((state->transaction = coap_new_transaction(request->mid, remote_ipaddr,
+    request->mid = coaps_get_mid();
+    if((state->transaction = coaps_new_transaction(request->mid, remote_ipaddr,
                                                   remote_port))) {
-      state->transaction->callback = coap_blocking_request_callback;
+      coaps_set_transaction_context(state->transaction, ctx);
+      state->transaction->callback = coaps_blocking_request_callback;
       state->transaction->callback_data = state;
 
       if(state->block_num > 0) {
-        coap_set_header_block2(request, state->block_num, 0,
+        coaps_set_header_block2(request, state->block_num, 0,
                                REST_MAX_CHUNK_SIZE);
       }
-      state->transaction->packet_len = coap_serialize_message(request,
+      state->transaction->packet_len = coaps_serialize_message(request,
                                                               state->
                                                               transaction->
                                                               packet);
 
-      coap_send_transaction(state->transaction);
+      coaps_send_transaction(state->transaction);
       PRINTF("Requested #%lu (MID %u)\n", state->block_num, request->mid);
 
       PT_YIELD_UNTIL(&state->pt, ev == PROCESS_EVENT_POLL);
@@ -462,7 +420,7 @@ PT_THREAD(coap_blocking_request
         PT_EXIT(&state->pt);
       }
 
-      coap_get_header_block2(state->response, &res_block, &more, NULL, NULL);
+      coaps_get_header_block2(state->response, &res_block, &more, NULL, NULL);
 
       PRINTF("Received #%lu%s (%u bytes)\n", res_block, more ? "+" : "",
              state->response->payload_len);
@@ -485,38 +443,38 @@ PT_THREAD(coap_blocking_request
 /*---------------------------------------------------------------------------*/
 /*- REST Engine Interface ---------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-const struct rest_implementation coap_rest_implementation = {
-  "CoAP-18",
+const struct rest2_implementation coap_rest2_implementation = {
+  "CoAPS-18",
 
-  coap_init_engine,
-  coap_set_service_callback,
+  coaps_init_engine,
+  coaps_set_service_callback,
 
-  coap_get_header_uri_path,
-  coap_get_rest_method,
-  coap_set_status_code,
+  coaps_get_header_uri_path,
+  coaps_get_rest_method,
+  coaps_set_status_code,
 
-  coap_get_header_content_format,
-  coap_set_header_content_format,
-  coap_get_header_accept,
-  coap_get_header_size2,
-  coap_set_header_size2,
-  coap_get_header_max_age,
-  coap_set_header_max_age,
-  coap_set_header_etag,
-  coap_get_header_if_match,
-  coap_get_header_if_none_match,
-  coap_get_header_uri_host,
-  coap_set_header_location_path,
+  coaps_get_header_content_format,
+  coaps_set_header_content_format,
+  coaps_get_header_accept,
+  coaps_get_header_size2,
+  coaps_set_header_size2,
+  coaps_get_header_max_age,
+  coaps_set_header_max_age,
+  coaps_set_header_etag,
+  coaps_get_header_if_match,
+  coaps_get_header_if_none_match,
+  coaps_get_header_uri_host,
+  coaps_set_header_location_path,
 
-  coap_get_payload,
-  coap_set_payload,
+  coaps_get_payload,
+  coaps_set_payload,
 
-  coap_get_header_uri_query,
-  coap_get_query_variable,
-  coap_get_post_variable,
+  coaps_get_header_uri_query,
+  coaps_get_query_variable,
+  coaps_get_post_variable,
 
-  coap_notify_observers,
-  coap_observe_handler,
+  coaps_notify_observers,
+  coaps_observe_handler,
 
   {
     CONTENT_2_05,

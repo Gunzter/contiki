@@ -31,49 +31,53 @@
 
 /**
  * \file
- *      Collection of default configuration values.
+ *      CoAP module for reliable transport
  * \author
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef ER_COAP_CONF_H_
-#define ER_COAP_CONF_H_
+#ifndef COAP_TRANSACTIONS_H_
+#define COAP_TRANSACTIONS_H_
 
-/* Features that can be disabled to achieve smaller memory footprint */
-#define COAP_LINK_FORMAT_FILTERING     0
-#define COAP_PROXY_OPTION_PROCESSING   0
+#include "er-coaps.h"
 
-/* Listening port for the CoAP REST Engine */
-#ifndef COAP_SERVER_PORT
-#define COAP_SERVER_PORT               COAP_DEFAULT_PORT
-#endif
+/*
+ * Modulo mask (thus +1) for a random number to get the tick number for the random
+ * retransmission time between COAP_RESPONSE_TIMEOUT and COAP_RESPONSE_TIMEOUT*COAP_RESPONSE_RANDOM_FACTOR.
+ */
+#define COAP_RESPONSE_TIMEOUT_TICKS         (CLOCK_SECOND * COAP_RESPONSE_TIMEOUT)
+#define COAP_RESPONSE_TIMEOUT_BACKOFF_MASK  (long)((CLOCK_SECOND * COAP_RESPONSE_TIMEOUT * ((float)COAP_RESPONSE_RANDOM_FACTOR - 1.0)) + 0.5) + 1
 
-#ifndef COAP_CORE_OBSERVE
-#define COAP_CORE_OBSERVE                    0
-#endif
+/* container for transactions with message buffer and retransmission info */
+typedef struct coaps_transaction {
+  struct coaps_transaction *next;        /* for LIST */
 
+  uint16_t mid;
+  struct etimer retrans_timer;
+  uint8_t retrans_counter;
 
-/* The number of concurrent messages that can be stored for retransmission in the transaction layer. */
-#ifndef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS     1
-#endif /* COAP_MAX_OPEN_TRANSACTIONS */
+  uip_ipaddr_t addr;
+  uint16_t port;
 
-/* Maximum number of failed request attempts before action */
-#ifndef COAP_MAX_ATTEMPTS
-#define COAP_MAX_ATTEMPTS              1
-#endif /* COAP_MAX_ATTEMPTS */
+  context_t *ctx;
 
-/* Conservative size limit, as not all options have to be set at the same time. Check when Proxy-Uri option is used */
-#ifndef COAP_MAX_HEADER_SIZE    /*     Hdr                  CoF  If-Match         Obs Blo strings   */
-#define COAP_MAX_HEADER_SIZE           (4 + COAP_TOKEN_LEN + 3 + 1 + COAP_ETAG_LEN + 4 + 4 + 30)  /* 65 */
-#endif /* COAP_MAX_HEADER_SIZE */
+  rest2ful_response_handler callback;
+  void *callback_data;
 
-/* Number of observer slots (each takes abot xxx bytes) */
-#ifndef COAP_MAX_OBSERVERS
-#define COAP_MAX_OBSERVERS    COAP_MAX_OPEN_TRANSACTIONS - 1
-#endif /* COAP_MAX_OBSERVERS */
+  uint16_t packet_len;
+  uint8_t packet[COAP_MAX_PACKET_SIZE + 1];     /* +1 for the terminating '\0' which will not be sent
+                                                 * Use snprintf(buf, len+1, "", ...) to completely fill payload */
+} coaps_transaction_t;
 
-/* Interval in notifies in which NON notifies are changed to CON notifies to check client. */
-#define COAP_OBSERVE_REFRESH_INTERVAL  20
+void coaps_register_as_transaction_handler(void);
 
-#endif /* ER_COAP_CONF_H_ */
+coaps_transaction_t *coaps_new_transaction(uint16_t mid, uip_ipaddr_t *addr,
+                                         uint16_t port);
+void coaps_set_transaction_context(coaps_transaction_t *t, context_t *ctx);
+void coaps_send_transaction(coaps_transaction_t *t);
+void coaps_clear_transaction(coaps_transaction_t *t);
+coaps_transaction_t *coaps_get_transaction_by_mid(uint16_t mid);
+
+void coaps_check_transactions(void);
+
+#endif /* COAP_TRANSACTIONS_H_ */

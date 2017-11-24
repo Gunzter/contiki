@@ -1,0 +1,14 @@
+er-coaps_src = er-coaps.c er-coaps-engine.c er-coaps-transactions.c      \
+  er-coaps-observe.c er-coaps-separate.c er-coaps-res-well-known-core.c \
+  er-coaps-block1.c er-coaps-observe-client.c
+
+# Erbium will implement the REST Engine
+CFLAGS += -DREST2=coap_rest2_implementation
+
+ifeq ($(WITH_DTLS_COAP),1)
+CFLAGS += -DWITH_DTLS_COAP=1
+er-coaps_src += er-coaps-dtls.c
+else
+CFLAGS += -DWITH_DTLS_COAP=0
+er-coaps_src += er-coaps-udp.c
+endif

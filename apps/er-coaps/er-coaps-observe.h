@@ -31,49 +31,59 @@
 
 /**
  * \file
- *      Collection of default configuration values.
+ *      CoAP module for observing resources (draft-ietf-core-observe-11).
  * \author
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef ER_COAP_CONF_H_
-#define ER_COAP_CONF_H_
+#ifndef COAP_OBSERVE_H_
+#define COAP_OBSERVE_H_
 
-/* Features that can be disabled to achieve smaller memory footprint */
-#define COAP_LINK_FORMAT_FILTERING     0
-#define COAP_PROXY_OPTION_PROCESSING   0
+#include "er-coaps.h"
+#include "er-coaps-transactions.h"
+#include "stimer.h"
 
-/* Listening port for the CoAP REST Engine */
-#ifndef COAP_SERVER_PORT
-#define COAP_SERVER_PORT               COAP_DEFAULT_PORT
-#endif
+#define COAP_OBSERVER_URL_LEN 20
 
-#ifndef COAP_CORE_OBSERVE
-#define COAP_CORE_OBSERVE                    0
-#endif
+typedef struct coaps_observable {
+  uint32_t observe_clock;
+  struct stimer orphan_timer;
+  list_t observers;
+  coaps_packet_t notification;
+  uint8_t buffer[COAP_MAX_PACKET_SIZE + 1];
+} coaps_observable_t;
 
+typedef struct coaps_observer {
+  struct coaps_observer *next;   /* for LIST */
 
-/* The number of concurrent messages that can be stored for retransmission in the transaction layer. */
-#ifndef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS     1
-#endif /* COAP_MAX_OPEN_TRANSACTIONS */
+  char url[COAP_OBSERVER_URL_LEN];
+  context_t *ctx;
+  uip_ipaddr_t addr;
+  uint16_t port;
+  uint8_t token_len;
+  uint8_t token[COAP_TOKEN_LEN];
+  uint16_t last_mid;
 
-/* Maximum number of failed request attempts before action */
-#ifndef COAP_MAX_ATTEMPTS
-#define COAP_MAX_ATTEMPTS              1
-#endif /* COAP_MAX_ATTEMPTS */
+  int32_t obs_counter;
 
-/* Conservative size limit, as not all options have to be set at the same time. Check when Proxy-Uri option is used */
-#ifndef COAP_MAX_HEADER_SIZE    /*     Hdr                  CoF  If-Match         Obs Blo strings   */
-#define COAP_MAX_HEADER_SIZE           (4 + COAP_TOKEN_LEN + 3 + 1 + COAP_ETAG_LEN + 4 + 4 + 30)  /* 65 */
-#endif /* COAP_MAX_HEADER_SIZE */
+  struct etimer retrans_timer;
+  uint8_t retrans_counter;
+} coaps_observer_t;
 
-/* Number of observer slots (each takes abot xxx bytes) */
-#ifndef COAP_MAX_OBSERVERS
-#define COAP_MAX_OBSERVERS    COAP_MAX_OPEN_TRANSACTIONS - 1
-#endif /* COAP_MAX_OBSERVERS */
+list_t coaps_get_observers(void);
+void coaps_remove_observer(coaps_observer_t *o);
+int coaps_remove_observer_by_client(uip_ipaddr_t *addr, uint16_t port);
+int coaps_remove_observer_by_token(uip_ipaddr_t *addr, uint16_t port,
+                                  uint8_t *token, size_t token_len);
+int coaps_remove_observer_by_uri(uip_ipaddr_t *addr, uint16_t port,
+                                const char *uri);
+int coaps_remove_observer_by_mid(uip_ipaddr_t *addr, uint16_t port,
+                                uint16_t mid);
 
-/* Interval in notifies in which NON notifies are changed to CON notifies to check client. */
-#define COAP_OBSERVE_REFRESH_INTERVAL  20
+void coaps_notify_observers(resource2_t *resource);
+void coaps_notify_observers_sub(resource2_t *resource, const char *subpath);
 
-#endif /* ER_COAP_CONF_H_ */
+void coaps_observe_handler(resource2_t *resource, void *request,
+                          void *response);
+
+#endif /* COAP_OBSERVE_H_ */

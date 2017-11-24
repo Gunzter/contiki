@@ -61,7 +61,10 @@
 #define PRINTF(...)
 #define PRINT6ADDR(addr)
 #define PRINTLLADDR(addr)
+#define PRINTF_HEX(data, len)
 #endif
+
+#define COAP_PROXY_OPTION_PROCESSING 1
 
 /*---------------------------------------------------------------------------*/
 /*- Variables ---------------------------------------------------------------*/
@@ -324,16 +327,16 @@ coap_serialize_message(void *packet, uint8_t *buffer){
   coap_packet_t *const coap_pkt = (coap_packet_t *)packet; 
 
     if(IS_OPTION(coap_pkt, COAP_OPTION_OBJECT_SECURITY)){ 
-     	printf("sending OSCOAP\n");
-	    size_t s = oscoap_prepare_message(packet, buffer);
-      oscoap_printf_hex(buffer, s);
-      return s;
+       PRINTF("sending OSCOAP\n");
+       size_t s = oscoap_prepare_message(packet, buffer);
+       PRINTF_HEX(buffer, s);
+       return s;
     }else{
-	     printf("sending COAP\n");
-	    // return coap_serialize_message_coap(packet, buffer); 
+       PRINTF("sending COAP\n");
+       // return coap_serialize_message_coap(packet, buffer); 
        size_t s = oscoap_serializer(packet, buffer, ROLE_COAP);
-        oscoap_printf_hex(buffer, s);
-        return s;
+       PRINTF_HEX(buffer, s);
+       return s;
     }
 }
 
@@ -464,7 +467,6 @@ coap_send_message(uip_ipaddr_t *addr, uint16_t port, uint8_t *data,
 
   uip_udp_packet_send(udp_conn, data, length);
   PRINTF("-sent UDP datagram (%u)-\n", length);
-  printf("-sent UDP datagram (%u)-\n", length);
   /* restore server socket to allow data from any node */
   memset(&udp_conn->ripaddr, 0, sizeof(udp_conn->ripaddr));
   udp_conn->rport = 0;
@@ -1484,7 +1486,7 @@ coap_status_t oscoap_parser(void *packet, uint8_t *data,
   coap_packet_t *const coap_pkt = (coap_packet_t *)packet;
   
   if(role == ROLE_COAP){
-    oscoap_printf_hex(data, data_len);
+    PRINTF_HEX(data, data_len);
     // initialize packet 
  //   PRINTF("ROLE COAP\n");
     memset(coap_pkt, 0, sizeof(coap_packet_t));
@@ -1649,8 +1651,8 @@ coap_status_t oscoap_parser(void *packet, uint8_t *data,
 #endif
       PRINTF("Proxy-Scheme NOT IMPLEMENTED [%.*s]\n",
              (int)coap_pkt->proxy_scheme_len, coap_pkt->proxy_scheme);
-      coap_error_message = "This is a constrained server (Contiki)";
-      return PROXYING_NOT_SUPPORTED_5_05;
+     // coap_error_message = "This is a constrained server (Contiki)";
+     // return PROXYING_NOT_SUPPORTED_5_05;
       break;
 
     case COAP_OPTION_URI_HOST:

@@ -37,9 +37,9 @@
  */
 
 #include <string.h>
-#include "er-coap-engine.h"
+#include "er-coaps-engine.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -77,13 +77,13 @@
 /*- Resource Handlers -------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
 void
-well_known_core_get_handler(void *request, void *response, uint8_t *buffer,
+well_known_core2_get_handler(void *request, void *response, uint8_t *buffer,
                             uint16_t preferred_size, int32_t *offset)
 {
   size_t strpos = 0;            /* position in overall string (which is larger than the buffer) */
   size_t bufpos = 0;            /* position within buffer (bytes written) */
   size_t tmplen = 0;
-  resource_t *resource = NULL;
+  resource2_t *resource = NULL;
 
 #if COAP_LINK_FORMAT_FILTERING
   /* For filtering. */
@@ -93,7 +93,7 @@ well_known_core_get_handler(void *request, void *response, uint8_t *buffer,
   const char *end = NULL;
   char *value = NULL;
   char lastchar = '\0';
-  int len = coap_get_header_uri_query(request, &filter);
+  int len = coaps_get_header_uri_query(request, &filter);
 
   if(len) {
     value = strchr(filter, '=');
@@ -113,7 +113,7 @@ well_known_core_get_handler(void *request, void *response, uint8_t *buffer,
   }
 #endif
 
-  for(resource = (resource_t *)list_head(rest_get_resources()); resource;
+  for(resource = (resource2_t *)list_head(rest_get_resources()); resource;
       resource = resource->next) {
 #if COAP_LINK_FORMAT_FILTERING
     /* Filtering */
@@ -170,7 +170,7 @@ well_known_core_get_handler(void *request, void *response, uint8_t *buffer,
     ADD_STRING_IF_POSSIBLE(resource->url, >=);
     ADD_CHAR_IF_POSSIBLE('>');
 
-    if(resource->attributes != NULL && resource->attributes[0]) {
+    if(resource->attributes != NULL && resource->attributes[0] && resource->attributes[0] != ';') {
       ADD_CHAR_IF_POSSIBLE(';');
       ADD_STRING_IF_POSSIBLE(resource->attributes, >);
     }
@@ -185,13 +185,13 @@ well_known_core_get_handler(void *request, void *response, uint8_t *buffer,
   if(bufpos > 0) {
     PRINTF("BUF %zu: %.*s\n", bufpos, (int)bufpos, (char *)buffer);
 
-    coap_set_payload(response, buffer, bufpos);
-    coap_set_header_content_format(response, APPLICATION_LINK_FORMAT);
+    coaps_set_payload(response, buffer, bufpos);
+    coaps_set_header_content_format(response, APPLICATION_LINK_FORMAT);
   } else if(strpos > 0) {
-    PRINTF("well_known_core_handler(): bufpos<=0\n");
+    PRINTF("well_known_core2_handler(): bufpos<=0\n");
 
-    coap_set_status_code(response, BAD_OPTION_4_02);
-    coap_set_payload(response, "BlockOutOfScope", 15);
+    coaps_set_status_code(response, BAD_OPTION_4_02);
+    coaps_set_payload(response, "BlockOutOfScope", 15);
   }
 
   if(resource == NULL) {
@@ -203,6 +203,6 @@ well_known_core_get_handler(void *request, void *response, uint8_t *buffer,
   }
 }
 /*---------------------------------------------------------------------------*/
-RESOURCE(res_well_known_core, "ct=40", well_known_core_get_handler, NULL,
+RESOURCE2(res_well_known_core2, "ct=40", well_known_core2_get_handler, NULL,
          NULL, NULL);
 /*---------------------------------------------------------------------------*/

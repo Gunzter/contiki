@@ -39,10 +39,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "er-coap.h"
-#include "er-coap-block1.h"
+#include "er-coaps.h"
+#include "er-coaps-block1.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
 #define PRINT6ADDR(addr) PRINTF("[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7], ((uint8_t *)addr)[8], ((uint8_t *)addr)[9], ((uint8_t *)addr)[10], ((uint8_t *)addr)[11], ((uint8_t *)addr)[12], ((uint8_t *)addr)[13], ((uint8_t *)addr)[14], ((uint8_t *)addr)[15])
@@ -56,7 +56,7 @@
 /*----------------------------------------------------------------------------*/
 
 /**
- * \brief Block 1 support within a coap-ressource
+ * \brief Block 1 support within a coaps-ressource
  *
  *        This function will help you to use block 1. If target is null
  *        error handling and response configuration is active. On return
@@ -77,22 +77,22 @@
  *         -1 if initialisation failed
  */
 int
-coap_block1_handler(void *request, void *response, uint8_t *target, size_t *len, size_t max_len)
+coaps_block1_handler(void *request, void *response, uint8_t *target, size_t *len, size_t max_len)
 {
   const uint8_t *payload = 0;
-  int pay_len = REST.get_request_payload(request, &payload);
+  int pay_len = REST2.get_request_payload(request, &payload);
 
   if(!pay_len || !payload) {
-    erbium_status_code = REST.status.BAD_REQUEST;
-    coap_error_message = "NoPayload";
+    erbium2_status_code = REST2.status.BAD_REQUEST;
+    coaps_error_message = "NoPayload";
     return -1;
   }
 
-  coap_packet_t *packet = (coap_packet_t *)request;
+  coaps_packet_t *packet = (coaps_packet_t *)request;
 
   if(packet->block1_offset + pay_len > max_len) {
-    erbium_status_code = REST.status.REQUEST_ENTITY_TOO_LARGE;
-    coap_error_message = "Message to big";
+    erbium2_status_code = REST2.status.REQUEST_ENTITY_TOO_LARGE;
+    coaps_error_message = "Message to big";
     return -1;
   }
 
@@ -108,9 +108,9 @@ coap_block1_handler(void *request, void *response, uint8_t *target, size_t *len,
            packet->block1_size,
            packet->block1_offset);
 
-    coap_set_header_block1(response, packet->block1_num, packet->block1_more, packet->block1_size);
+    coaps_set_header_block1(response, packet->block1_num, packet->block1_more, packet->block1_size);
     if(packet->block1_more) {
-      coap_set_status_code(response, CONTINUE_2_31);
+      coaps_set_status_code(response, CONTINUE_2_31);
       return 1;
     }
   }

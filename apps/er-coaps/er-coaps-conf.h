@@ -40,18 +40,23 @@
 #define ER_COAP_CONF_H_
 
 /* Features that can be disabled to achieve smaller memory footprint */
-#define COAP_LINK_FORMAT_FILTERING     0
+#ifndef COAP_LINK_FORMAT_FILTERING
+#define COAP_LINK_FORMAT_FILTERING           0
+#endif
 #define COAP_PROXY_OPTION_PROCESSING   0
 
-/* Listening port for the CoAP REST Engine */
-#ifndef COAP_SERVER_PORT
-#define COAP_SERVER_PORT               COAP_DEFAULT_PORT
+#ifndef WITH_WELL_KNOWN_CORE
+#define WITH_WELL_KNOWN_CORE                 0
 #endif
 
 #ifndef COAP_CORE_OBSERVE
 #define COAP_CORE_OBSERVE                    0
 #endif
 
+/* Listening port for the CoAP REST Engine */
+#ifndef COAP_SERVER_PORT
+#define COAP_SERVER_PORT               COAPS_DEFAULT_PORT
+#endif
 
 /* The number of concurrent messages that can be stored for retransmission in the transaction layer. */
 #ifndef COAP_MAX_OPEN_TRANSACTIONS

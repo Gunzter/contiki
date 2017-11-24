@@ -78,7 +78,7 @@ struct token_seq_t{
 
 /* This is the number of contexts that the store can handle */
 #define CONTEXT_NUM 1
-#define TOKEN_SEQ_NUM 2
+#define TOKEN_SEQ_NUM 1
 
 void oscoap_ctx_store_init();
 
