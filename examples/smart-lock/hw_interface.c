@@ -5,7 +5,7 @@
 //uint8_t *a_ptr;
 //uint8_t *b_ptr;
 
-#define HW 0
+#define HW 1 
 #if HW
 #include "dev/gpio.h"
 #endif

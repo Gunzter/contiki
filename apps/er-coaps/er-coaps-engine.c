@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "er-coaps-engine.h"
+#include "hw_interface.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -273,6 +274,9 @@ coaps_receive(context_t * ctx)
 
     /* if(parsed correctly) */
     if(erbium2_status_code == NO_ERROR) {
+      printf("green led on\n");
+      set_led_green(1);
+
       if(transaction) {
         coaps_send_transaction(transaction);
       }
@@ -280,8 +284,10 @@ coaps_receive(context_t * ctx)
       PRINTF("Clearing transaction for manual response");
       coaps_clear_transaction(transaction);
     } else {
+      printf("red led on\n");
+      set_led_red(1);
       coaps_message_type_t reply_type = COAP_TYPE_ACK;
-
+      
       PRINTF("ERROR %u: %s\n", erbium2_status_code, coaps_error_message);
       coaps_clear_transaction(transaction);
 

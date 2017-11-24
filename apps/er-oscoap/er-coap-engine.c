@@ -285,7 +285,9 @@ coap_receive(void)
       PRINTF("Clearing transaction for manual response");
       coap_clear_transaction(transaction);
     } else {
-     /*
+        printf("red led on\n");
+        set_led_red(1);
+ /*
       if(!(message->code >= COAP_GET && message->code <= COAP_DELETE) && erbium_status_code == OSCOAP_CRYPTO_ERROR) { //message is response
         printf("ERROR IN RESPONSE %u: %s\n", erbium_status_code, coap_error_message);
         coap_transaction_t * t = coap_get_transaction_by_mid(message->mid);
@@ -334,8 +336,6 @@ coap_receive(void)
         }
         return;
       } else {
-        printf("red led on\n");
-        set_led_red(1);
         coap_init_message(message, reply_type, erbium_status_code,
                         message->mid);
         coap_set_payload(message, coap_error_message,
