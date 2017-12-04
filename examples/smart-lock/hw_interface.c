@@ -10,6 +10,15 @@
 #include "dev/gpio.h"
 #endif
 
+#define DEBUG 1
+#if DEBUG
+#include <stdio.h>
+#define PRINTF(...) printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
+
+
 uint8_t led_green = 0;
 uint8_t led_red = 0;
 uint8_t lock = 0;
@@ -108,11 +117,11 @@ void initiate_hw_interface(void)
 
 void print_stack_pointer(){
 	void* p = NULL;
-	printf("sp = %p\n", (void*)&p);
+	PRINTF("sp = %p\n", (void*)&p);
 }
 
 void test_sp(){
-	printf("test sp ");
+	PRINTF("test sp ");
 	uint8_t a[20];
 	int q = 5;
 	int b = 10 + q;
@@ -124,7 +133,7 @@ void test_sp(){
 PROCESS_THREAD(hw_interface, ev, data)
 {
   PROCESS_BEGIN();
-   printf("hw started\n");
+   PRINTF("hw started\n");
   static struct etimer et;
 
   etimer_set(&et, 1 * CLOCK_SECOND);
@@ -135,24 +144,24 @@ PROCESS_THREAD(hw_interface, ev, data)
     PROCESS_YIELD();
 
       if(etimer_expired(&ten_hz)){
-      //	printf("update hw\n");
+      //	PRINTF("update hw\n");
       	update_hw();
       	etimer_reset(&ten_hz);
       }
 
 	  if(etimer_expired(&two_sec)) {
-	  	printf("clear leds: lock=%d, red=%d, green=%d\n", lock, led_red, led_green);
+	  	PRINTF("clear leds: lock=%d, red=%d, green=%d\n", lock, led_red, led_green);
 	  	clear_led_green();
 	  	clear_led_red();
 	  	etimer_reset(&two_sec);
 	  }
 
 	  if(etimer_expired(&et)) {
-//	    oscoap_printf_hex(a_ptr, 8);
-//	    oscoap_printf_hex(b_ptr, 8);
+//	    oscoap_PRINTF_hex(a_ptr, 8);
+//	    oscoap_PRINTF_hex(b_ptr, 8);
 //	    print_stack_pointer();
 //	    test_sp();
- 	    printf("lock=%d, red=%d, green=%d\n", lock, led_red, led_green);
+ 	    PRINTF("lock=%d, red=%d, green=%d\n", lock, led_red, led_green);
 	    etimer_reset(&et);	
 	    } /* etimer */
 	

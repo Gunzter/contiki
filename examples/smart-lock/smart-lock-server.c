@@ -66,7 +66,7 @@
  * Resources to be activated need to be imported through the extern keyword.
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
-extern resource_t coap_lock, oscoap_lock;
+extern resource_t coap_lock, oscoap_lock, oscoap2_lock;
 extern resource2_t coaps_lock;
 
 //uint8_t sender_id[] =  { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
@@ -115,7 +115,7 @@ PROCESS_THREAD(er_example_server, ev, data)
 
   rest_activate_resource(&coap_lock, "coap/lock");
   rest_activate_resource(&oscoap_lock, "coap2coap/oscoap/lock");
-
+  rest_activate_resource(&oscoap2_lock, "oscoap/lock");
   rest2_activate_resource(&coaps_lock, "coaps/lock");
   
   oscoap_ctx_store_init();

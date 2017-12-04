@@ -36,11 +36,10 @@
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-
 #include <stdlib.h>
 #include <string.h>
-#include "rest2-engine.h"
-#include "er-coaps.h"
+#include "rest-engine.h"
+#include "er-coap.h"
 #include "hw_interface.h"
 
 #define DEBUG 0
@@ -51,14 +50,20 @@
 #define PRINTF(...)
 #endif
 
+
 static void res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
 uint8_t led_green;
 uint8_t led_red;
 uint8_t lock;
-
-RESOURCE2(coaps_lock,
+/*
+ * A handler function named [resource name]_handler must be implemented for each RESOURCE.
+ * A buffer for the response payload is provided through the buffer pointer. Simple resources can ignore
+ * preferred_size and offset, but must respect the REST_MAX_CHUNK_SIZE limit for the buffer.
+ * If a smaller block size is requested for CoAP, the REST framework automatically splits the data.
+ */
+RESOURCE(oscoap2_lock,
          "title=\"Lock ?len=0..\";rt=\"Text\"",
          res_get_handler,
          NULL,
@@ -69,14 +74,30 @@ static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
   const char *len = NULL;
-  PRINTF("GET handler\n");
+  PRINTF("GET handleri 2\n");
+
+  coap_packet_t* coap_request = (coap_packet_t*)request;
+  if(IS_OPTION(coap_request, COAP_OPTION_OBJECT_SECURITY)){
+    coap_packet_t* coap_response = (coap_packet_t*)response;
+    coap_response->context = coap_request->context;
+    coap_set_header_object_security(coap_response);
+    PRINTF("OSCOAP!\n");
+  }else {
+    PRINTF("NOT OSCOAP\n");
+    PRINTF("TODO SEND ERRORS!\n");
+    REST.set_response_status(response, REST.status.UNAUTHORIZED);
+    char error_msg[] = "Resource guarded by ogres, stay away!";
+    REST.set_response_payload(response, error_msg, strlen(error_msg));
+    return;
+  }
+
 
   char const *const locked_message = "1";
   int locked_len = 1;
   char const *const unlocked_message = "0";
   int unlocked_len = 1;
 
-  REST2.set_header_content_type(response, REST2.type.TEXT_PLAIN); 
+  REST.set_header_content_type(response, REST.type.TEXT_PLAIN); /* text/plain is the default, hence this option could be omitted. */
 
   int length = 1;
   if( lock == 1){ //lock locked
@@ -85,7 +106,7 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     memcpy(buffer, unlocked_message, unlocked_len);
   }
   
-  REST2.set_response_payload(response, buffer, length);
+  REST.set_response_payload(response, buffer, length);
 
 }
 
@@ -94,10 +115,27 @@ static void
 res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
   //const char *len = NULL;
-  PRINTF("PUT handler\n");
+  PRINTF("PUT handler 2\n");
+
+  coap_packet_t* coap_request = (coap_packet_t*)request;
+  if(IS_OPTION(coap_request, COAP_OPTION_OBJECT_SECURITY)){
+    coap_packet_t* coap_response = (coap_packet_t*)response;
+    coap_response->context = coap_request->context;
+    coap_set_header_object_security(coap_response);
+    PRINTF("OSCOAP!\n");
+  }else {
+    PRINTF("NOT OSCOAP\n");
+    PRINTF("TODO SEND ERRORS!\n");
+    REST.set_response_status(response, REST.status.UNAUTHORIZED);
+    char error_msg[] = "Resource guarded by ogres, stay away!";
+    REST.set_response_payload(response, error_msg, strlen(error_msg));
+    return;
+  }
+
+
   int len;
   const uint8_t *payload_buffer;
-  len = REST2.get_request_payload(request, &payload_buffer);
+  len = REST.get_request_payload(request, &payload_buffer);
   int command; 
   if(len == 1){
     const char* p_b= (char*)payload_buffer;
@@ -117,8 +155,7 @@ res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   //rest get payload
   //update HW monitor
   //send response
-  REST2.set_response_status(response, REST2.status.CHANGED);
-  REST2.set_header_content_type(response, REST2.type.TEXT_PLAIN); 
-  REST2.set_response_payload(response, payload_buffer, len);
+  REST.set_response_status(response, REST.status.CHANGED);
+  REST.set_header_content_type(response, REST.type.TEXT_PLAIN); /* text/plain is the default, hence this option could be omitted. */
+  REST.set_response_payload(response, payload_buffer, len);
 }
-

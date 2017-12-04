@@ -5,7 +5,7 @@
 #include "opt-cose.h"
 
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -400,7 +400,7 @@ uint8_t set_seq_from_token(uint8_t* token, uint8_t token_len, uint32_t seq){
   return 1;
 }
 
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 void oscoap_print_context(oscoap_ctx_t* ctx){
 

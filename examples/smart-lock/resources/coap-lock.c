@@ -42,6 +42,16 @@
 #include "er-coap.h"
 #include "hw_interface.h"
 
+
+#define DEBUG 0
+#if DEBUG
+#include <stdio.h>
+#define PRINTF(...) printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
+
+
 static void res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
@@ -65,7 +75,7 @@ static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
   const char *len = NULL;
-  printf("GET handler\n");
+  PRINTF("GET handler\n");
 
   char const *const locked_message = "1";
   int locked_len = 1;
@@ -90,7 +100,7 @@ static void
 res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
   //const char *len = NULL;
-  printf("PUT handler\n");
+  PRINTF("PUT handler\n");
   int len;
   const uint8_t *payload_buffer;
   len = REST.get_request_payload(request, &payload_buffer);
@@ -104,7 +114,7 @@ res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
       command = atoi(p_b);
     }
 
-    printf("command %d\n", command);
+    PRINTF("command %d\n", command);
     
   }
 

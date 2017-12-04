@@ -42,6 +42,15 @@
 #include "er-coap.h"
 #include "hw_interface.h"
 
+#define DEBUG 0
+#if DEBUG
+#include <stdio.h>
+#define PRINTF(...) printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
+
+
 static void res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
@@ -65,17 +74,17 @@ static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
   const char *len = NULL;
-  printf("GET handler\n");
+  PRINTF("GET handler\n");
 
   coap_packet_t* coap_request = (coap_packet_t*)request;
   if(IS_OPTION(coap_request, COAP_OPTION_OBJECT_SECURITY)){
     coap_packet_t* coap_response = (coap_packet_t*)response;
     coap_response->context = coap_request->context;
     coap_set_header_object_security(coap_response);
-    printf("OSCOAP!\n");
+    PRINTF("OSCOAP!\n");
   }else {
-    printf("NOT OSCOAP\n");
-    printf("TODO SEND ERRORS!\n");
+    PRINTF("NOT OSCOAP\n");
+    PRINTF("TODO SEND ERRORS!\n");
     REST.set_response_status(response, REST.status.UNAUTHORIZED);
     char error_msg[] = "Resource guarded by ogres, stay away!";
     REST.set_response_payload(response, error_msg, strlen(error_msg));
@@ -106,17 +115,17 @@ static void
 res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
   //const char *len = NULL;
-  printf("PUT handler\n");
+  PRINTF("PUT handler\n");
 
   coap_packet_t* coap_request = (coap_packet_t*)request;
   if(IS_OPTION(coap_request, COAP_OPTION_OBJECT_SECURITY)){
     coap_packet_t* coap_response = (coap_packet_t*)response;
     coap_response->context = coap_request->context;
     coap_set_header_object_security(coap_response);
-    printf("OSCOAP!\n");
+    PRINTF("OSCOAP!\n");
   }else {
-    printf("NOT OSCOAP\n");
-    printf("TODO SEND ERRORS!\n");
+    PRINTF("NOT OSCOAP\n");
+    PRINTF("TODO SEND ERRORS!\n");
     REST.set_response_status(response, REST.status.UNAUTHORIZED);
     char error_msg[] = "Resource guarded by ogres, stay away!";
     REST.set_response_payload(response, error_msg, strlen(error_msg));
@@ -137,7 +146,7 @@ res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
       command = atoi(p_b);
     }
 
-    printf("command %d\n", command);
+    PRINTF("command %d\n", command);
     
   }
 

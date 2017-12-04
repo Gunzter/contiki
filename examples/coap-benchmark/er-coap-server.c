@@ -43,7 +43,7 @@
 #include "contiki-net.h"
 #include "rest-engine.h"
 #include "er-coap.h"
-
+#include "sys/energest.h"
 
 #if PLATFORM_HAS_BUTTON
 #include "dev/button-sensor.h"
@@ -111,6 +111,14 @@ PROCESS_THREAD(er_example_server, ev, data)
 /* Define application-specific events here. */
   while(1) {
     PROCESS_WAIT_EVENT();
+
+    energest_flush();
+    printf("Energest CPU: %lu LPM: %lu Deep LPM: %lu Total time: %lu seconds\n",
+           (unsigned long)(energest_type_time(ENERGEST_TYPE_CPU) / ENERGEST_SECOND),
+           (unsigned long)(energest_type_time(ENERGEST_TYPE_LPM) / ENERGEST_SECOND),
+           (unsigned long)(energest_type_time(ENERGEST_TYPE_DEEP_LPM) / ENERGEST_SECOND),
+           (unsigned long)(ENERGEST_GET_TOTAL_TIME() / ENERGEST_SECOND));
+
 #if PLATFORM_HAS_BUTTON
     if(ev == sensors_event && data == &button_sensor) {
       PRINTF("*******BUTTON*******\n");

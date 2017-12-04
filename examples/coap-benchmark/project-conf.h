@@ -42,6 +42,8 @@
 
 #define PROCESS_CONF_NO_PROCESS_NAMES 0
 
+#define ENERGEST_CONF_ON 1
+
 /* Custom channel and PAN ID configuration for your project. */
 /*
    #undef RF_CHANNEL
