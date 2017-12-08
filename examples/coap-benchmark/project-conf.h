@@ -40,6 +40,8 @@
 #define __PROJECT_ERBIUM_CONF_H__
 
 
+#define ENERGEST_CONF_ON 1
+
 #define PROCESS_CONF_NO_PROCESS_NAMES 0
 
 /* Custom channel and PAN ID configuration for your project. */

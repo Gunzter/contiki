@@ -43,9 +43,10 @@
 #define PROCESS_CONF_NO_PROCESS_NAMES 0
 
 /* Custom channel and PAN ID configuration for your project. */
+
 /*
    #undef RF_CHANNEL
-   #define RF_CHANNEL                     26
+   #define RF_CHANNEL                     24 //was 26
 
    #undef IEEE802154_CONF_PANID
    #define IEEE802154_CONF_PANID          0xABCD
@@ -61,14 +62,14 @@
    require more memory. */
 /* For projects, optimize memory and enable RDC and CSMA again. */
 #undef NETSTACK_CONF_RDC
-#define NETSTACK_CONF_RDC              nullrdc_driver
+#define NETSTACK_CONF_RDC            contikimac_driver//  nullrdc_driver
 
 /* Disabling TCP on CoAP nodes. */
 #undef UIP_CONF_TCP
 #define UIP_CONF_TCP                  0 
 
 #undef NETSTACK_CONF_MAC
-#define NETSTACK_CONF_MAC     nullmac_driver
+#define NETSTACK_CONF_MAC     csma_driver //nullmac_driver
 
 /* Increase rpl-border-router IP-buffer when using more than 64. */
 #undef REST_MAX_CHUNK_SIZE

@@ -69,12 +69,12 @@ extern resource_t
   res_hello1;
 
 uint8_t sender_id[] =  { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
-//uint8_t sender_key[] = {0xd5, 0xcb, 0x37, 0x10, 0x37, 0x15, 0x34, 0xa1, 0xca, 0x22, 0x4e, 0x19, 0xeb, 0x96, 0xe9, 0x6d };
-//uint8_t sender_iv[] = {0x20, 0x75, 0x0b, 0x95, 0xf9, 0x78, 0xc8 };
+uint8_t sender_key[] = {0xd5, 0xcb, 0x37, 0x10, 0x37, 0x15, 0x34, 0xa1, 0xca, 0x22, 0x4e, 0x19, 0xeb, 0x96, 0xe9, 0x6d };
+uint8_t sender_iv[] = {0x20, 0x75, 0x0b, 0x95, 0xf9, 0x78, 0xc8 };
 
 uint8_t receiver_id[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
-//uint8_t receiver_key[] = {0x21, 0x64, 0x42, 0xda, 0x60, 0x3c, 0x51, 0x59, 0x2d, 0xf4, 0xc3, 0xd0, 0xcd, 0x1d, 0x0d, 0x48 };
-//uint8_t receiver_iv[] = {0x01, 0x53, 0xdd, 0xfe, 0xde, 0x44, 0x19 };
+uint8_t receiver_key[] = {0x21, 0x64, 0x42, 0xda, 0x60, 0x3c, 0x51, 0x59, 0x2d, 0xf4, 0xc3, 0xd0, 0xcd, 0x1d, 0x0d, 0x48 };
+uint8_t receiver_iv[] = {0x01, 0x53, 0xdd, 0xfe, 0xde, 0x44, 0x19 };
 
 uint8_t master_secret[35] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
             0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 
@@ -115,6 +115,7 @@ PROCESS_THREAD(er_example_server, ev, data)
   PRINTF("LL header: %u\n", UIP_LLH_LEN);
   PRINTF("IP+UDP header: %u\n", UIP_IPUDPH_LEN);
   PRINTF("REST max chunk: %u\n", REST_MAX_CHUNK_SIZE);
+ // PRINTF("RF channel: %u\n", CC2538_RF_CHANNEL);
 
   /* Initialize the REST engine. */
   rest_init_engine();
@@ -124,7 +125,7 @@ PROCESS_THREAD(er_example_server, ev, data)
    * WARNING: Activating twice only means alternate path, not two instances!
    * All static variables are the same for each URI path.
    */
-  rest_activate_resource(&res_hello1, "hello/world");
+  rest_activate_resource(&res_hello1, "coap2coap/hello/world");
 
 
 oscoap_ctx_store_init();
@@ -132,13 +133,13 @@ oscoap_ctx_store_init();
 //Interop
 
 
-if(oscoap_derrive_ctx(master_secret, 35, NULL, 0, 12, 1, sender_id, 6, receiver_id, 6, 32) == 0) {
-  printf("Error: Could not derive new Context!\n");
-}
-
-//if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
-//  printf("Error: Could not create new Context!\n");
+//if(oscoap_derrive_ctx(master_secret, 35, NULL, 0, 12, 1, sender_id, 6, receiver_id, 6, 32) == 0) {
+//  printf("Error: Could not derive new Context!\n");
 //}
+
+if(oscoap_new_ctx( sender_key, sender_iv, receiver_key, receiver_iv, sender_id, 6, receiver_id, 6, 32) == 0){
+  printf("Error: Could not create new Context!\n");
+}
 
 /*
 oscoap_ctx_t* c = NULL;

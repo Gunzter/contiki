@@ -64,6 +64,10 @@
 #define PRINTF_HEX(data, len)
 #endif
 
+#if TIME_CONF_ON
+#include "rtimer.h"
+#endif
+
 /*---------------------------------------------------------------------------*/
 /*- Variables ---------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
@@ -326,7 +330,14 @@ coap_serialize_message(void *packet, uint8_t *buffer){
 
     if(IS_OPTION(coap_pkt, COAP_OPTION_OBJECT_SECURITY)){ 
        PRINTF("sending OSCOAP\n");
+#if TIME_CONF_ON
+rtimer_clock_t start = RTIMER_NOW();
+#endif
        size_t s = oscoap_prepare_message(packet, buffer);
+#if TIME_CONF_ON
+rtimer_clock_t stop = RTIMER_NOW();
+printf("o_s %hu\n", (unsigned short)(stop - start));
+#endif
        PRINTF_HEX(buffer, s);
        return s;
     }else{
@@ -1640,7 +1651,7 @@ coap_status_t oscoap_parser(void *packet, uint8_t *data,
       PRINTF("Proxy-Uri NOT IMPLEMENTED [%.*s]\n", (int)coap_pkt->proxy_uri_len,
              coap_pkt->proxy_uri);
       coap_error_message = "This is a constrained server (Contiki)";
-      return PROXYING_NOT_SUPPORTED_5_05;
+//      return PROXYING_NOT_SUPPORTED_5_05;
       break;
     case COAP_OPTION_PROXY_SCHEME:
 #if COAP_PROXY_OPTION_PROCESSING
@@ -1650,7 +1661,7 @@ coap_status_t oscoap_parser(void *packet, uint8_t *data,
       PRINTF("Proxy-Scheme NOT IMPLEMENTED [%.*s]\n",
              (int)coap_pkt->proxy_scheme_len, coap_pkt->proxy_scheme);
       coap_error_message = "This is a constrained server (Contiki)";
-      return PROXYING_NOT_SUPPORTED_5_05;
+//      return PROXYING_NOT_SUPPORTED_5_05;
       break;
 
     case COAP_OPTION_URI_HOST:

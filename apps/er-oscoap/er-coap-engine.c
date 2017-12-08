@@ -55,6 +55,10 @@
 #define PRINTLLADDR(addr)
 #endif
 
+#if TIME_CONF_ON
+#include "rtimer.h"
+#endif
+
 PROCESS(coap_engine, "CoAP Engine");
 
 /*---------------------------------------------------------------------------*/
@@ -80,6 +84,10 @@ coap_receive(void)
 
   if(uip_newdata()) {
 
+    #if TIME_CONF_ON
+    rtimer_clock_t start = RTIMER_NOW();
+    #endif 
+
     PRINTF("receiving UDP datagram from: ");
     PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
     PRINTF(":%u\n  Length: %u\n", uip_ntohs(UIP_UDP_BUF->srcport),
@@ -87,6 +95,10 @@ coap_receive(void)
 
     erbium_status_code =
      oscoap_parser(message, uip_appdata, uip_datalen(), ROLE_COAP);
+    #if TIME_CONF_ON
+    rtimer_clock_t stop = RTIMER_NOW();
+    printf("o_p %hu\n", (unsigned short)(stop-start));
+    #endif
 
     if(erbium_status_code == NO_ERROR) {
 
@@ -130,17 +142,13 @@ coap_receive(void)
             block_size = MIN(block_size, COAP_MAX_BLOCK_SIZE);
             new_offset = block_offset;
           }
-
           /* invoke resource handler */
           if(service_cbk) {
-
             /* call REST framework and check if found and allowed */
             if(service_cbk
                  (message, response, transaction->packet + COAP_MAX_HEADER_SIZE,
                  block_size, &new_offset)) {
-
               if(erbium_status_code == NO_ERROR) {
-
                 /* TODO coap_handle_blockwise(request, response, start_offset, end_offset); */
 
                 /* resource is unaware of Block1 */
@@ -307,12 +315,12 @@ coap_receive(void)
         /* set to sendable error code */
         erbium_status_code = INTERNAL_SERVER_ERROR_5_00;
         /* reuse input buffer for error message */
-        printf("HERE!\n");
+        PRINTF("HERE!\n");
       }
      
       //Respond with empty ACK
     if(!(message->code >= COAP_GET && message->code <= COAP_DELETE)) {
-        printf("SPECIAL (OUR) CASE!!!!\n");
+        PRINTF("SPECIAL (OUR) CASE!!!!\n");
         coap_transaction_t * t = coap_get_transaction_by_mid(message->mid);
         restful_response_handler callback = t->callback;
         void *callback_data = t->callback_data;
@@ -324,12 +332,12 @@ coap_receive(void)
                         uip_appdata, coap_serialize_message(message,
                                                             uip_appdata));
         if(callback) {
-          printf("calling callback\n");
+          PRINTF("calling callback\n");
           callback(callback_data, NULL);
         }
         return;
       } else {
-        printf("USUAL CASE!!!\n");
+        PRINTF("USUAL CASE!!!\n");
         coap_init_message(message, reply_type, erbium_status_code,
                         message->mid);
         coap_set_payload(message, coap_error_message,
@@ -340,7 +348,11 @@ coap_receive(void)
       }
       
     }
-  }
+  } 
+  
+  #if TIME_CONF_ON
+  rtimer_clock_t stop = RTIMER_NOW();
+  #endif
 
   /* if(new data) */
   return erbium_status_code;

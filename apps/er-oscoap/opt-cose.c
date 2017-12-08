@@ -35,6 +35,10 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include "er-oscoap.h"
 
+#if TIME_CRYPTO_CONF_ON
+#include "rtimer.h"
+#endif
+
 #define DEBUG 0
 #if DEBUG
 #include <stdio.h>
@@ -344,8 +348,9 @@ uint8_t OPT_COSE_Encrypt(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len)
 	PRINTF_HEX(cose->aad, cose->aad_len);
 
 
-
-
+  #if TIME_CRYPTO_CONF_ON
+  rtimer_clock_t start = RTIMER_NOW();
+  #endif
   //aead work on one buffer for plaintext and ciphertext
  // memcpy(cose->ciphertext, cose->plaintext, cose->plaintext_len);
 
@@ -354,8 +359,10 @@ uint8_t OPT_COSE_Encrypt(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len)
   COSE_AES_CCM.aead(cose->nonce, cose->ciphertext, cose->plaintext_len, cose->aad, cose->aad_len, &cose->ciphertext[cose->plaintext_len], TSize, 1);
   PRINTF("CCM STAR ciphertext:\n");
   PRINTF_HEX(cose->ciphertext, cose->ciphertext_len);
-
-		
+  #if TIME_CRYPTO_CONF_ON
+  rtimer_clock_t stop = RTIMER_NOW(); 
+  printf("c_e %hu\n", (unsigned short)(stop-start));
+  #endif
 	if(ret == 0){
 		return 0;
 	}
@@ -392,7 +399,9 @@ uint8_t OPT_COSE_Decrypt(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len)
   
 
   uint8_t tag[TagSize];
-
+  #if TIME_CRYPTO_CONF_ON 
+  rtimer_clock_t start = RTIMER_NOW();
+  #endif
   COSE_AES_CCM.set_key(key);
   COSE_AES_CCM.aead(cose->nonce, cose->ciphertext, cose->plaintext_len, cose->aad, cose->aad_len, tag, TagSize, 0);
 
@@ -402,8 +411,10 @@ uint8_t OPT_COSE_Decrypt(opt_cose_encrypt_t *cose, uint8_t *key, size_t key_len)
   }
   //Move the decrypted plaintext to the plaintext fielf
   memcpy(cose->plaintext, cose->ciphertext, cose->plaintext_len);
-
-
+  #if TIME_CRYPTO_CONF_ON
+  rtimer_clock_t stop = RTIMER_NOW();
+  printf("c_d %hu\n", (unsigned short)(stop-start));
+  #endif
 	if(ret == 0){
 		PRINTF("COSE AES CCM plaintext:\n");
 		PRINTF_HEX(cose->plaintext, cose->plaintext_len);

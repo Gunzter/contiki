@@ -44,6 +44,7 @@
 #include "rest-engine.h"
 #include "er-coap.h"
 
+#include "sys/energest.h"
 
 #if PLATFORM_HAS_BUTTON
 #include "dev/button-sensor.h"
@@ -103,11 +104,30 @@ PROCESS_THREAD(er_example_server, ev, data)
    * All static variables are the same for each URI path.
    */
   rest_activate_resource(&res_hello, "hello/world");
-
+  static struct etimer et;
+  static unsigned long last_cpu, last_lpm, last_listen, last_transmit;
+  static int i;
+  etimer_set(&et, CLOCK_SECOND * 10);
 
 /* Define application-specific events here. */
   while(1) {
-    PROCESS_WAIT_EVENT();
+ //   PROCESS_WAIT_EVENT();
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+    etimer_reset(&et);
+
+   printf("p(%lu,%lu,%lu,%lu);v(%d);\n",
+             energest_type_time(ENERGEST_TYPE_CPU) - last_cpu,
+             energest_type_time(ENERGEST_TYPE_LPM) - last_lpm,
+             energest_type_time(ENERGEST_TYPE_TRANSMIT) - last_transmit,
+             energest_type_time(ENERGEST_TYPE_LISTEN) - last_listen,
+             i++);
+
+  last_cpu = energest_type_time(ENERGEST_TYPE_CPU);
+  last_lpm = energest_type_time(ENERGEST_TYPE_LPM);
+  last_transmit = energest_type_time(ENERGEST_TYPE_TRANSMIT);
+  last_listen = energest_type_time(ENERGEST_TYPE_LISTEN);
+
+
   }                             /* while (1) */
 
   PROCESS_END();

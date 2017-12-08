@@ -6,6 +6,9 @@ unittest: native-unit-test
 
 CONTIKI=../..
 
+CFLAGS += -DCOAP_PROXY_OPTION_PROCESSING=1 
+#CFLAGS += -DTIME_CRYPTO_CONF_ON=1 
+CFLAGS += -DTIME_CONF_ON=1 
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\" 
 #For saving .s and .o files
