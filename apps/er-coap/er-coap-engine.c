@@ -54,6 +54,10 @@
 #define PRINTLLADDR(addr)
 #endif
 
+#if TIME_CONF_ON
+#include "rtimer.h"
+#endif
+
 PROCESS(coap_engine, "CoAP Engine");
 
 /*---------------------------------------------------------------------------*/
@@ -83,10 +87,16 @@ coap_receive(void)
     PRINT6ADDR(&UIP_IP_BUF->srcipaddr);
     PRINTF(":%u\n  Length: %u\n", uip_ntohs(UIP_UDP_BUF->srcport),
            uip_datalen());
+    #if TIME_CONF_ON
+    rtimer_clock_t start = RTIMER_NOW();
+    #endif
 
     erbium_status_code =
       coap_parse_message(message, uip_appdata, uip_datalen());
-
+    #if TIME_CONF_ON
+    rtimer_clock_t stop = RTIMER_NOW();
+    printf("co_p %hu\n", (unsigned short)(stop - start));
+    #endif
     if(erbium_status_code == NO_ERROR) {
 
       /*TODO duplicates suppression, if required by application */

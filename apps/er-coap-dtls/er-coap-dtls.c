@@ -175,7 +175,7 @@ coap_handle_receive(context_t *ctx)
     dtls_session_init(&session);
     uip_ipaddr_copy(&session.addr, &UIP_IP_BUF->srcipaddr);
     session.port = UIP_UDP_BUF->srcport;
-
+    printf("new message\n");
     dtls_handle_message(ctx, &session, uip_appdata, uip_datalen());
   }
 }

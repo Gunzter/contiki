@@ -57,6 +57,10 @@
 #define PRINTLLADDR(addr)
 #endif
 
+#if TIME_CONF_ON
+#include "rtimer.h"
+#endif
+
 /*---------------------------------------------------------------------------*/
 /*- Variables ---------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
@@ -310,6 +314,9 @@ coap_init_message(void *packet, coap_message_type_t type, uint8_t code,
 size_t
 coap_serialize_message(void *packet, uint8_t *buffer)
 {
+  #if TIME_CONF_ON
+  rtimer_clock_t start = RTIMER_NOW();
+  #endif
   coap_packet_t *const coap_pkt = (coap_packet_t *)packet;
   uint8_t *option;
   unsigned int current_number = 0;
@@ -418,7 +425,11 @@ coap_serialize_message(void *packet, uint8_t *buffer)
          coap_pkt->buffer[4],
          coap_pkt->buffer[5], coap_pkt->buffer[6], coap_pkt->buffer[7]
          );
-
+  #if TIME_CONF_ON
+  rtimer_clock_t stop = RTIMER_NOW();
+  printf("co_s %hu\n", (unsigned short)(stop - start));
+  #endif
+  
   return (option - buffer) + coap_pkt->payload_len; /* packet length */
 }
 /*---------------------------------------------------------------------------*/
@@ -584,8 +595,8 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
 #endif
       PRINTF("Proxy-Uri NOT IMPLEMENTED [%.*s]\n", (int)coap_pkt->proxy_uri_len,
              coap_pkt->proxy_uri);
-      coap_error_message = "This is a constrained server (Contiki)";
-      return PROXYING_NOT_SUPPORTED_5_05;
+//      coap_error_message = "This is a constrained server (Contiki)";
+//      return PROXYING_NOT_SUPPORTED_5_05;
       break;
     case COAP_OPTION_PROXY_SCHEME:
 #if COAP_PROXY_OPTION_PROCESSING
@@ -594,8 +605,8 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
 #endif
       PRINTF("Proxy-Scheme NOT IMPLEMENTED [%.*s]\n",
              (int)coap_pkt->proxy_scheme_len, coap_pkt->proxy_scheme);
-      coap_error_message = "This is a constrained server (Contiki)";
-      return PROXYING_NOT_SUPPORTED_5_05;
+//      coap_error_message = "This is a constrained server (Contiki)";
+//      return PROXYING_NOT_SUPPORTED_5_05;
       break;
 
     case COAP_OPTION_URI_HOST:
