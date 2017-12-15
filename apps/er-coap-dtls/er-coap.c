@@ -566,7 +566,7 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
       PRINTF("Proxy-Uri NOT IMPLEMENTED [%.*s]\n", (int)coap_pkt->proxy_uri_len,
              coap_pkt->proxy_uri);
       coap_error_message = "This is a constrained server (Contiki)";
-      return PROXYING_NOT_SUPPORTED_5_05;
+    //  return PROXYING_NOT_SUPPORTED_5_05;
       break;
     case COAP_OPTION_PROXY_SCHEME:
 #if COAP_PROXY_OPTION_PROCESSING
@@ -576,7 +576,7 @@ coap_parse_message(void *packet, uint8_t *data, uint16_t data_len)
       PRINTF("Proxy-Scheme NOT IMPLEMENTED [%.*s]\n",
              (int)coap_pkt->proxy_scheme_len, coap_pkt->proxy_scheme);
       coap_error_message = "This is a constrained server (Contiki)";
-      return PROXYING_NOT_SUPPORTED_5_05;
+   //   return PROXYING_NOT_SUPPORTED_5_05;
       break;
 
     case COAP_OPTION_URI_HOST:

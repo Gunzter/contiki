@@ -103,7 +103,7 @@ PROCESS_THREAD(er_example_server, ev, data)
    * WARNING: Activating twice only means alternate path, not two instances!
    * All static variables are the same for each URI path.
    */
-  rest_activate_resource(&res_hello, "coap2coap/hello/world");
+  rest_activate_resource(&res_hello, "hello/world");
 //  static struct etimer et;
 //  static unsigned long last_cpu, last_lpm, last_listen, last_transmit;
 //  static int i;

@@ -92,7 +92,7 @@ PROCESS_THREAD(er_example_server, ev, data)
   PRINTF("LL header: %u\n", UIP_LLH_LEN);
   PRINTF("IP+UDP header: %u\n", UIP_IPUDPH_LEN);
   PRINTF("REST max chunk: %u\n", REST_MAX_CHUNK_SIZE);
-
+  PRINTF("RTIMER_ARCH_SECOND = %d\n", RTIMER_ARCH_SECOND);
   /* Initialize the REST engine. */
   rest_init_engine();
 
