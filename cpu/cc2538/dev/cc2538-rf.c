@@ -51,6 +51,9 @@
 #include "reg.h"
 
 #include <string.h>
+#if RADIO_TIME_CONF_ON
+#include "rtimer.h"
+#endif
 /*---------------------------------------------------------------------------*/
 #define CHECKSUM_LEN 2
 
@@ -641,9 +644,13 @@ transmit(unsigned short transmit_len)
   }
 
   /* Start the transmission */
+  
   ENERGEST_OFF(ENERGEST_TYPE_LISTEN);
   ENERGEST_ON(ENERGEST_TYPE_TRANSMIT);
-
+  #if RADIO_TIME_CONF_ON
+	rtimer_clock_t start = RTIMER_NOW();
+  #endif
+  
   CC2538_RF_CSP_ISTXON();
 
   counter = 0;
@@ -663,7 +670,10 @@ transmit(unsigned short transmit_len)
   }
   ENERGEST_OFF(ENERGEST_TYPE_TRANSMIT);
   ENERGEST_ON(ENERGEST_TYPE_LISTEN);
-
+  #if RADIO_TIME_CONF_ON
+	rtimer_clock_t stop = RTIMER_NOW();
+	printf("r_s %hu len %hu\n", (unsigned short)(stop - start), transmit_len+2 );
+  #endif
   if(was_off) {
     off();
   }
