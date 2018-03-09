@@ -157,12 +157,12 @@ coap_send_message(context_t * ctx, uip_ipaddr_t *addr, uint16_t port, uint8_t *d
   uip_ipaddr_copy(&session.addr, addr);
   session.port = port;
   #if TIME_CONF_ON
-  rtimer_clock_t start = RTIMER_NOW();
+  //rtimer_clock_t start = RTIMER_NOW();
   #endif
   dtls_write(ctx, &session, data, length);
   #if TIME_CONF_ON
-  rtimer_clock_t stop = RTIMER_NOW();
-  printf("cs_s %hu\n", (unsigned short)(stop - start));
+  //rtimer_clock_t stop = RTIMER_NOW();
+  //printf("cs_s %hu, len %hu \n", (unsigned short)(stop - start), length);
   #endif
 }
 /*-----------------------------------------------------------------------------------*/
@@ -186,15 +186,15 @@ coap_handle_receive(context_t *ctx)
     uip_ipaddr_copy(&session.addr, &UIP_IP_BUF->srcipaddr);
     session.port = UIP_UDP_BUF->srcport;
     
-    printf("new message %d bytes\n", uip_datalen());
+ //   printf("new message %d bytes\n", uip_datalen());
     #if TIME_CONF_ON
-  //  rtimer_clock_t start = RTIMER_NOW();
+    rtimer_clock_t start = RTIMER_NOW();
     #endif
     dtls_handle_message(ctx, &session, uip_appdata, uip_datalen());
     #if TIME_CONF_ON
-  //  rtimer_clock_t stop = RTIMER_NOW();
-  //  printf("cs_p %hu\n", (unsigned short)(stop - start));
+    rtimer_clock_t stop = RTIMER_NOW();
+    printf("cs_p %hu\n", (unsigned short)(stop - start));
     #endif
-    printf("end new message\n\n");
+  //  printf("end new message\n\n");
   }
 }

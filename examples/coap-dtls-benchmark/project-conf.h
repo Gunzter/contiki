@@ -61,7 +61,7 @@
    require more memory. */
 /* For projects, optimize memory and enable RDC and CSMA again. */
 #undef NETSTACK_CONF_RDC
-#define NETSTACK_CONF_RDC        contikimac_driver //      nullrdc_driver
+#define NETSTACK_CONF_RDC        nullrdc_driver //contikimac_driver //      nullrdc_driver
 
 /* Disabling TCP on CoAP nodes. */
 #undef UIP_CONF_TCP

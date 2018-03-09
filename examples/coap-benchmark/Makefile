@@ -1,4 +1,4 @@
-all: er-coap-server er-coap-client  
+all: er-coap-server er-coap-client test-coap-client test-coap-server
 #er-coap-observe-client  er-oscoap-observe-client
 # use target "er-plugtest-server" explicitly when requried 
 
