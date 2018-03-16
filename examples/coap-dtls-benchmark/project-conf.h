@@ -54,7 +54,7 @@
 /* IP buffer size must match all other hops, in particular the border router. */
 
    #undef UIP_CONF_BUFFER_SIZE
-   #define UIP_CONF_BUFFER_SIZE          200
+   #define UIP_CONF_BUFFER_SIZE          400 //256
 
 
 /* Disabling RDC and CSMA for demo purposes. Core updates often
@@ -68,11 +68,11 @@
 #define UIP_CONF_TCP                  0 
 
 #undef NETSTACK_CONF_MAC
-#define NETSTACK_CONF_MAC     csma_driver //nullmac_driver
+#define NETSTACK_CONF_MAC     nullmac_driver //csma_driver //nullmac_driver
 
 /* Increase rpl-border-router IP-buffer when using more than 64. */
 #undef REST_MAX_CHUNK_SIZE
-#define REST_MAX_CHUNK_SIZE            64
+#define REST_MAX_CHUNK_SIZE            280 //64
 
 /* Estimate your header size, especially when using Proxy-Uri. */
 

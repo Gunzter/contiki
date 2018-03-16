@@ -129,7 +129,6 @@ PROCESS_THREAD(er_example_client, ev, data)
 	Then 10 messages with 1 byte payload, then 2 bytes etc untill 256 bytes.
     */
     if(etimer_expired(&et)) {
- 	 etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
 //	etimer_reset(&et);      
   	if(payload_len > 256){
 		printf("END!\n");
@@ -172,6 +171,7 @@ PROCESS_THREAD(er_example_client, ev, data)
 			payload_len *= 2;
 		}
  	}
+ 	 etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
       	ctr++;
    }/* timer */  
   

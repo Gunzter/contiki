@@ -64,19 +64,21 @@
 #define LOCAL_PORT      UIP_HTONS(COAP_DEFAULT_PORT + 1)
 #define REMOTE_PORT     UIP_HTONS(COAP_DEFAULT_PORT)
 
-#define TOGGLE_INTERVAL 20
+#define TOGGLE_INTERVAL 2
 
 PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
 
 uip_ipaddr_t server_ipaddr;
 static struct etimer et;
+static int ctr = 0;
+static int payload_len = 0;
 
 /* Example URIs that can be queried. */
-#define NUMBER_OF_URLS 2
+#define NUMBER_OF_URLS 3
 /* leading and ending slashes only for demo purposes, get cropped automatically when setting the Uri-Path */
 char *service_urls[NUMBER_OF_URLS] =
-{ ".well-known/core", "/hello/world" };
+{ ".well-known/core", "/hello/world", "/test" };
 #if PLATFORM_HAS_BUTTON
 static int uri_switch = 0;
 #endif
@@ -110,28 +112,67 @@ PROCESS_THREAD(er_example_client, ev, data)
  
     
 
-  etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
+  char const *const msg = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789101112113141516171819202122232425262728293031323334353637383940";
+  printf("CPU, Low-Power-Mode, Transmit, Listen\n");
+printf("toggle interval %d, clock_second %lu\n", TOGGLE_INTERVAL, CLOCK_SECOND);
+  etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND*15);
+  //etimer_set(&et, TOGGLE_INTERVAL *30);
 
   while(1) {
     PROCESS_YIELD();
   
-
+    /*
+        Everything is done in ticks. One tick per second.
+        Every 10 ticks a GET is sent, then the server will print statistics.
+        First 10 ticks when no messages are sent. This is to provide a baseline for consumption.
+        Then 10 messages (one per tick) where a message is sent with 0 bytes payload.
+        Then 10 messages with 1 byte payload, then 2 bytes etc untill 256 bytes.
+    */
     if(etimer_expired(&et)) {
-      printf("Requesting %s\n", service_urls[1]);
-      // prepare request, TID is set by COAP_BLOCKING_REQUEST() 
-      coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-      coap_set_header_uri_path(request, service_urls[1]);
+	printf("TIMER\n");   
+        if(payload_len > 256){
+                printf("END!\n");
+                ctr = 0;
+                payload_len = 0;
+                //while(1){
+                //}
+                //break; //while(1)
+        }
+        // prepare request, TID is set by COAP_BLOCKING_REQUEST() 
+        if(ctr % 10 == 0){
+                coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
+        } else {
+                coap_init_message(request, COAP_TYPE_CON, COAP_PUT, 0);
+                if(ctr > 20){
+                        coap_set_payload(request, msg, payload_len);
+                }
+        }
 
-
-      PRINT6ADDR(&server_ipaddr);
-      PRINTF(" : %u\n", UIP_HTONS(REMOTE_PORT));
-
-      COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request,
+        coap_set_header_uri_path(request, service_urls[2]);
+        if(ctr >= 10 || ctr == 0){
+                if(request->code == COAP_GET){
+                        printf("GET");
+                } else {
+                        printf("PUT");
+                }
+                printf(" to %s, sending %d bytes\n", service_urls[2], payload_len);
+                COAP_BLOCKING_REQUEST(&server_ipaddr, REMOTE_PORT, request,
                             client_chunk_handler);
+        } else {
+                printf("pass!\n");
+        }
 
-    
+        if(ctr % 10 == 0){
+                if(payload_len == 0 && ctr >= 20){
+                       payload_len++;
+                } else {
+                        payload_len *= 2;
+                }
+        }
+        ctr++;
+     etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
 
-      etimer_reset(&et);
+
     }
   } //while(1)
 

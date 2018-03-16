@@ -95,7 +95,7 @@ PROCESS(webserver_nogui_process, "Web server");
 PROCESS_THREAD(webserver_nogui_process, ev, data)
 {
   PROCESS_BEGIN();
-
+  PRINTA("uIP buffer: %u\n", UIP_BUFSIZE);
   httpd_init();
 
   while(1) {
@@ -355,7 +355,7 @@ print_local_addresses(void)
 {
   int i;
   uint8_t state;
-
+   PRINTA("uIP buffer: %u\n", UIP_BUFSIZE);
   PRINTA("Server IPv6 addresses:\n");
   for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
     state = uip_ds6_if.addr_list[i].state;
