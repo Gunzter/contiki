@@ -1,4 +1,4 @@
-all: er-oscoap-server er-oscoap-client 
+all: er-oscoap-server er-oscoap-client test-oscoap-client test-oscoap-server 
 #er-coap-observe-client  er-oscoap-observe-client
 # use target "er-plugtest-server" explicitly when requried 
 
@@ -8,8 +8,8 @@ CONTIKI=../..
 
 CFLAGS += -DCOAP_PROXY_OPTION_PROCESSING=1 
 #CFLAGS += -DTIME_CRYPTO_CONF_ON=1 
-CFLAGS += -DTIME_CONF_ON=1 
-CFLAGS += -DRADIO_TIME_CONF_ON=1
+#CFLAGS += -DTIME_CONF_ON=1 
+#CFLAGS += -DRADIO_TIME_CONF_ON=1
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\" 
 #For saving .s and .o files

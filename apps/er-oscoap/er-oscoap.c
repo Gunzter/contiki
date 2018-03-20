@@ -298,13 +298,13 @@ size_t oscoap_prepare_message(void* packet, uint8_t *buffer){
   PRINTF("PREPARE MESAGE\n");
   static coap_packet_t * coap_pkt;
   opt_cose_encrypt_t cose;
-  uint8_t plaintext_buffer[50]; //TODO, workaround this to decrease memory footprint
+  uint8_t plaintext_buffer[250]; //TODO, workaround this to decrease memory footprint
   uint8_t seq_buffer[CONTEXT_SEQ_LEN];
   uint8_t nonce_buffer[CONTEXT_INIT_VECT_LEN];
 
   coap_pkt = (coap_packet_t *)packet;
   OPT_COSE_Init(&cose);
-  memset(plaintext_buffer, 0, 50);
+  memset(plaintext_buffer, 0, 250);
 
   if(coap_pkt->context == NULL){
     PRINTF("ERROR: NO CONTEXT IN PREPARE MESSAGE!\n");
@@ -436,10 +436,10 @@ coap_status_t oscoap_decode_packet(coap_packet_t* coap_pkt){
   OPT_COSE_Init(&cose);
 
   if(coap_pkt->object_security_len == 0){
-    PRINTF("DECODE COSE IN PAYLOAD\n");
+    PRINTF("DECODE COSE IN PAYLOAD len %d\n", coap_pkt->payload_len);
     cose_decompress(&cose, coap_pkt->payload, coap_pkt->payload_len);
   }else{
-    PRINTF("DECODE COSE IN OPTION\n");
+    PRINTF("DECODE COSE IN OPTION len %d\n", coap_pkt->object_security_len);
     cose_decompress(&cose, coap_pkt->object_security, coap_pkt->object_security_len);
   }
 
