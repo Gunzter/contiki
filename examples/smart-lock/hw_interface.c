@@ -89,16 +89,16 @@ static void update_hw(){
 	}
 
 	if(led_green){
+		GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_A_NUM), GPIO_PIN_MASK(3));
+	}else {
+		GPIO_CLR_PIN(GPIO_PORT_TO_BASE(GPIO_A_NUM), GPIO_PIN_MASK(3));
+	}
+
+	if(lock){
 		GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_A_NUM), GPIO_PIN_MASK(5));
 	}else {
 		GPIO_CLR_PIN(GPIO_PORT_TO_BASE(GPIO_A_NUM), GPIO_PIN_MASK(5));
-	}
-
-	if(lock){ // when PA3 is 0 the lock is locked, PA3 == 1 => open
-		GPIO_CLR_PIN(GPIO_PORT_TO_BASE(GPIO_A_NUM), GPIO_PIN_MASK(3));
-	}else {
-		GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_A_NUM), GPIO_PIN_MASK(3));
-	}
+	}	
 	#endif
 }
 
