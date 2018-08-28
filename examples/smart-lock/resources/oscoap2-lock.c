@@ -73,8 +73,7 @@ RESOURCE(oscoap2_lock,
 static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-  const char *len = NULL;
-  PRINTF("GET handleri 2\n");
+  PRINTF("GET handler 2\n");
 
   coap_packet_t* coap_request = (coap_packet_t*)request;
   if(IS_OPTION(coap_request, COAP_OPTION_OBJECT_SECURITY)){
@@ -84,9 +83,8 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     PRINTF("OSCOAP!\n");
   }else {
     PRINTF("NOT OSCOAP\n");
-    PRINTF("TODO SEND ERRORS!\n");
     REST.set_response_status(response, REST.status.UNAUTHORIZED);
-    char error_msg[] = "Resource guarded by ogres, stay away!";
+    char error_msg[] = "OSCORE only!";
     REST.set_response_payload(response, error_msg, strlen(error_msg));
     return;
   }
@@ -125,9 +123,8 @@ res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
     PRINTF("OSCOAP!\n");
   }else {
     PRINTF("NOT OSCOAP\n");
-    PRINTF("TODO SEND ERRORS!\n");
     REST.set_response_status(response, REST.status.UNAUTHORIZED);
-    char error_msg[] = "Resource guarded by ogres, stay away!";
+    char error_msg[] = "OSCORE only!";
     REST.set_response_payload(response, error_msg, strlen(error_msg));
     return;
   }
@@ -136,7 +133,7 @@ res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
   int len;
   const uint8_t *payload_buffer;
   len = REST.get_request_payload(request, &payload_buffer);
-  int command; 
+  int command = 0; 
   if(len == 1){
     const char* p_b= (char*)payload_buffer;
   

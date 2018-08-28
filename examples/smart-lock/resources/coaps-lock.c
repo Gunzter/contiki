@@ -68,7 +68,6 @@ RESOURCE2(coaps_lock,
 static void
 res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-  const char *len = NULL;
   PRINTF("GET handler\n");
 
   char const *const locked_message = "1";
@@ -93,12 +92,11 @@ res_get_handler(void *request, void *response, uint8_t *buffer, uint16_t preferr
 static void
 res_put_handler(void *request, void *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-  //const char *len = NULL;
   PRINTF("PUT handler\n");
   int len;
   const uint8_t *payload_buffer;
   len = REST2.get_request_payload(request, &payload_buffer);
-  int command; 
+  int command = 0; 
   if(len == 1){
     const char* p_b= (char*)payload_buffer;
   

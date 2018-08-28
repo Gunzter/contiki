@@ -40,15 +40,14 @@ PROJECT_SOURCEFILES += $(REST_RESOURCES_FILES)
 SMALL=1
 WITH_DTLS_COAP=1
 
-CFLAGS += -DWATCHDOG_CONF_ENABLE=0
+#Enable/disable watchdog timer
+CFLAGS += -DWATCHDOG_CONF_ENABLE=1
 
 
 #CFLAGS += -Werror
 # REST Engine shall use Erbium CoAP implementation
 APPS += tinydtls/aes tinydtls/sha2 tinydtls
-#APPS += er-coap-dtls
 APPS += er-oscoap
-#APPS += coap-dtls-oscoap
 APPS += rest-engine
 APPS += er-coaps
 APPS += rest2-engine

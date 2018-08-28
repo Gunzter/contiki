@@ -1,13 +1,11 @@
 #include "hw_interface.h"
 #include "contiki.h"
-//#include "address_export.h"
 #include "er-oscoap.h"
-//uint8_t *a_ptr;
-//uint8_t *b_ptr;
 
 #define HW 1 
 #if HW
 #include "dev/gpio.h"
+#include "dev/pwm.h"
 #endif
 
 #define DEBUG 1
@@ -51,7 +49,6 @@ config_gpio(uint8_t port, uint8_t pin, uint8_t type)
 }
 #endif
 
-//TODO add mutex
 void set_lock(uint8_t status){
 	if(status > 0){
 		lock = 1;
@@ -93,20 +90,26 @@ static void update_hw(){
 	}else {
 		GPIO_CLR_PIN(GPIO_PORT_TO_BASE(GPIO_A_NUM), GPIO_PIN_MASK(3));
 	}
-
+	
 	if(lock){
-		GPIO_SET_PIN(GPIO_PORT_TO_BASE(GPIO_A_NUM), GPIO_PIN_MASK(5));
+  		pwm_start(PWM_TIMER_1, PWM_TIMER_A, GPIO_A_NUM, 5);
 	}else {
-		GPIO_CLR_PIN(GPIO_PORT_TO_BASE(GPIO_A_NUM), GPIO_PIN_MASK(5));
+  		pwm_stop(PWM_TIMER_1, PWM_TIMER_A, GPIO_A_NUM, 5, 0);
 	}	
 	#endif
 }
 
+/*
+ * led_red   ->	pin A4
+ * led_green -> pin A3
+ * lock      ->	pin A5
+ */
 void initiate_hw_interface(void)
 {
   process_start(&hw_interface, NULL);
   #if HW
-  config_gpio(GPIO_A_NUM, 5, HWTEST_GPIO_OUTPUT);
+  pwm_enable(16000, 45, 0, PWM_TIMER_1, PWM_TIMER_A);
+   
   config_gpio(GPIO_A_NUM, 4, HWTEST_GPIO_OUTPUT);
   config_gpio(GPIO_A_NUM, 3, HWTEST_GPIO_OUTPUT);
   GPIO_CLR_PIN(GPIO_PORT_TO_BASE(GPIO_A_NUM), GPIO_PIN_MASK(5));
@@ -115,20 +118,6 @@ void initiate_hw_interface(void)
   #endif
 }
 
-void print_stack_pointer(){
-	void* p = NULL;
-	PRINTF("sp = %p\n", (void*)&p);
-}
-
-void test_sp(){
-	PRINTF("test sp ");
-	uint8_t a[20];
-	int q = 5;
-	int b = 10 + q;
-	a[5] = b;
-	print_stack_pointer();
-	a[1] = 5;
-}
 
 PROCESS_THREAD(hw_interface, ev, data)
 {
@@ -139,7 +128,7 @@ PROCESS_THREAD(hw_interface, ev, data)
   etimer_set(&et, 1 * CLOCK_SECOND);
   etimer_set(&ten_hz, CLOCK_SECOND/10);
   etimer_set(&two_sec, 2*CLOCK_SECOND);
-  
+//  set_lock(1);
   while(1) {
     PROCESS_YIELD();
 
@@ -153,14 +142,10 @@ PROCESS_THREAD(hw_interface, ev, data)
 	  	PRINTF("clear leds: lock=%d, red=%d, green=%d\n", lock, led_red, led_green);
 	  	clear_led_green();
 	  	clear_led_red();
-	  	etimer_reset(&two_sec);
+		etimer_reset(&two_sec);     
 	  }
 
 	  if(etimer_expired(&et)) {
-//	    oscoap_PRINTF_hex(a_ptr, 8);
-//	    oscoap_PRINTF_hex(b_ptr, 8);
-//	    print_stack_pointer();
-//	    test_sp();
  	    PRINTF("lock=%d, red=%d, green=%d\n", lock, led_red, led_green);
 	    etimer_reset(&et);	
 	    } /* etimer */
